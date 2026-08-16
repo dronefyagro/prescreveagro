@@ -471,7 +471,12 @@ function produtoLabel(id){
   const p = DB.produtos.find(x=>x.id===id);
   return p ? esc(p.nome) : "—";
 }
-function fmtBRL(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtBRL(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtHa(v){
+  const n = parseFloat(v);
+  if(isNaN(n)) return "0,00";
+  return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 function fmtDate(v){
   if(!v) return "—";
   const [y,m,d] = v.split('-');
@@ -504,7 +509,7 @@ const FORMS = {
       {k:"nome",label:"Nome da fazenda",type:"text",req:true,span2:true},
       {k:"municipio",label:"Município",type:"text"},
       {k:"uf",label:"UF",type:"text"},
-      {k:"areaTotalHa",label:"Área total (ha)",type:"number"},
+      {k:"areaTotalHa",label:"Área total (ha)",type:"number",step:"0.01",round2:true},
       {k:"responsavelId",label:"Responsável técnico",type:"select",source:"responsaveis"},
       {k:"observacao",label:"Observação",type:"textarea",span2:true},
     ],
@@ -512,7 +517,7 @@ const FORMS = {
       {h:"Fazenda",v:r=>esc(r.nome)},
       {h:"Cliente",v:r=>clienteLabel(r.clienteId)},
       {h:"Local",v:r=>esc([r.municipio,r.uf].filter(Boolean).join("/"))||"—"},
-      {h:"Área total",v:r=>r.areaTotalHa?`${r.areaTotalHa} ha`:"—"},
+      {h:"Área total",v:r=>r.areaTotalHa?`${fmtHa(r.areaTotalHa)} ha`:"—"},
       {h:"Resp. técnico",v:r=>r.responsavelId?respLabel(r.responsavelId):"—"},
     ]
   },
@@ -521,7 +526,7 @@ const FORMS = {
     fields:[
       {k:"fazendaId",label:"Fazenda",type:"select",source:"fazendas",req:true,span2:true},
       {k:"codigo",label:"Código / nome do talhão",type:"text",req:true},
-      {k:"hectares",label:"Hectares",type:"number",req:true},
+      {k:"hectares",label:"Hectares",type:"number",step:"0.01",round2:true,req:true},
       {k:"cultura",label:"Cultura",type:"text"},
       {k:"variedade",label:"Variedade",type:"text"},
       {k:"observacao",label:"Observação",type:"textarea",span2:true},
@@ -530,7 +535,7 @@ const FORMS = {
       {h:"Talhão",v:r=>esc(r.codigo)},
       {h:"Fazenda",v:r=>fazendaLabel(r.fazendaId)},
       {h:"Cliente",v:r=>{ const f=fazenda(r.fazendaId); return f?clienteLabel(f.clienteId):"—"; }},
-      {h:"Hectares",v:r=>r.hectares?`${r.hectares} ha`:"—"},
+      {h:"Hectares",v:r=>r.hectares?`${fmtHa(r.hectares)} ha`:"—"},
       {h:"Cultura",v:r=>esc(r.cultura)||"—"},
     ]
   },
@@ -544,7 +549,7 @@ const FORMS = {
       {k:"pragaAlvo",label:"Praga / doença / planta daninha-alvo",type:"textarea",span2:true},
       {k:"dose",label:"Dose recomendada",type:"text"},
       {k:"unidade",label:"Unidade",type:"text"},
-      {k:"precoUnitario",label:"Preço unitário (R$)",type:"number"},
+      {k:"precoUnitario",label:"Preço unitário (R$)",type:"number",step:"0.01",round2:true},
     ],
     columns:[
       {h:"Produto",v:r=>esc(r.nome)},
@@ -679,7 +684,7 @@ function openForm(moduleKey, id){
         </div></div>`;
     }
     return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
-      <input type="${f.type}" data-k="${f.k}" value="${esc(val)}"></div>`;
+      <input type="${f.type}" ${f.step?`step="${f.step}"`:''} data-k="${f.k}" value="${esc(val)}"></div>`;
   }).join('');
 
   document.getElementById('modalBody').innerHTML = `
@@ -713,6 +718,7 @@ async function saveRecord(moduleKey){
       const el = container.querySelector(`[data-k="${f.k}"]`);
       value = el ? el.value : "";
       if(f.type==="number") value = value===""? null : parseFloat(value);
+      if(f.round2 && value!==null) value = Math.round(value*100)/100;
     }
     if(f.req && (value===""||value===null||value===undefined)) missing.push(f.label);
     record[f.k] = value;
@@ -1043,7 +1049,7 @@ function renderTalhaoChecklist(){
   list.innerHTML = talhoes.map(t=>`
     <label class="checkrow">
       <input type="checkbox" value="${t.id}" ${recForm.talhaoIds.includes(t.id)?'checked':''} onchange="toggleTalhao('${t.id}', this.checked)">
-      ${esc(t.codigo)} — ${esc(t.hectares)||'?'} ha ${t.cultura?`(${esc(t.cultura)})`:''}
+      ${esc(t.codigo)} — ${t.hectares?fmtHa(t.hectares):'?'} ha ${t.cultura?`(${esc(t.cultura)})`:''}
     </label>
   `).join('');
 }
@@ -1156,8 +1162,8 @@ function updateCustoPreview(){
   const areaFazenda = f ? (parseFloat(f.areaTotalHa)||0) : 0;
 
   let html = `<b>Custo estimado do manejo:</b> ${fmtBRL(total)}/ha`;
-  if(hectaresSelecionados>0) html += `<br><b>Custo total — talhões selecionados (${hectaresSelecionados} ha):</b> ${fmtBRL(total*hectaresSelecionados)}`;
-  if(areaFazenda>0) html += `<br><b>Custo total — área total da fazenda (${areaFazenda} ha):</b> ${fmtBRL(total*areaFazenda)}`;
+  if(hectaresSelecionados>0) html += `<br><b>Custo total — talhões selecionados (${fmtHa(hectaresSelecionados)} ha):</b> ${fmtBRL(total*hectaresSelecionados)}`;
+  if(areaFazenda>0) html += `<br><b>Custo total — área total da fazenda (${fmtHa(areaFazenda)} ha):</b> ${fmtBRL(total*areaFazenda)}`;
   if(faltaPreco) html += ` <span style="color:var(--amber);">— um ou mais produtos sem preço ou dose numérica reconhecida; valor parcial.</span>`;
   el.innerHTML = html;
 }
@@ -1197,13 +1203,14 @@ async function saveReceituario(){
 
   const custoCalc = calcCustoHa(produtosValidos);
   const custoCalcHerb = calcCustoHa(herbicidasValidos);
-  recForm.custoHaCalculado = custoCalc.total + custoCalcHerb.total;
+  const round2 = v => Math.round(v*100)/100;
+  recForm.custoHaCalculado = round2(custoCalc.total + custoCalcHerb.total);
   recForm.custoHaParcial = custoCalc.faltaPreco || custoCalcHerb.faltaPreco;
-  const hectaresSelecionados = DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
-  recForm.custoTotalCalculado = recForm.custoHaCalculado * hectaresSelecionados;
+  const hectaresSelecionados = round2(DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0));
+  recForm.custoTotalCalculado = round2(recForm.custoHaCalculado * hectaresSelecionados);
   const fazendaAtual = fazenda(recForm.fazendaId);
-  const areaTotalFazenda = fazendaAtual ? (parseFloat(fazendaAtual.areaTotalHa)||0) : 0;
-  recForm.custoTotalFazenda = recForm.custoHaCalculado * areaTotalFazenda;
+  const areaTotalFazenda = round2(fazendaAtual ? (parseFloat(fazendaAtual.areaTotalHa)||0) : 0);
+  recForm.custoTotalFazenda = round2(recForm.custoHaCalculado * areaTotalFazenda);
 
   if(editingId){
     const idx = DB.receituarios.findIndex(r=>r.id===editingId);
@@ -1353,7 +1360,7 @@ function openPrintView(id){
         <div class="row"><span>Fazenda</span><b>${f?esc(f.nome):'—'}</b></div>
         <div class="row"><span>Local</span><b>${f?esc([f.municipio,f.uf].filter(Boolean).join('/'))||'—':'—'}</b></div>
         <div class="row"><span>Talhões</span><b>${esc(talhoesInfo.map(t=>t.codigo).join(', '))||'—'}</b></div>
-        <div class="row"><span>Área total tratada</span><b>${totalHa?totalHa+' ha':'—'}</b></div>
+        <div class="row"><span>Área total tratada</span><b>${totalHa?fmtHa(totalHa)+' ha':'—'}</b></div>
         <div class="row"><span>Praga / doença-alvo</span><b>${esc(r.pragaAlvo)||'—'}</b></div>
         <div class="row"><span>Cultura</span><b>${esc(talhoesInfo[0]?.cultura)||'Cana-de-açúcar'}</b></div>
         <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
