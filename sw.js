@@ -1,4 +1,4 @@
-const CACHE_NAME = "prescreve-agro-v1";
+const CACHE_NAME = "prescreve-agro-v2";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -17,24 +17,21 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// App shell: cache-first (works offline once installed).
-// API calls (Google Apps Script) always go to the network — never cached,
-// since this app's data must stay current across devices.
+// App shell: network-first — sempre busca a versão mais nova primeiro.
+// Só usa o cache como reserva se a rede falhar (offline).
+// API calls (Google Apps Script) nunca passam pelo cache.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const isApi = url.hostname.includes("script.google.com");
   if (isApi || event.request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return res;
-        })
-      );
-    })
+    fetch(event.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return res;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
