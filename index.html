@@ -548,14 +548,15 @@ const FORMS = {
       {k:"principioAtivo",label:"Princípio ativo / cepa",type:"text",span2:true},
       {k:"pragaAlvo",label:"Praga / doença / planta daninha-alvo",type:"textarea",span2:true},
       {k:"dose",label:"Dose recomendada",type:"text"},
-      {k:"unidade",label:"Unidade",type:"text"},
-      {k:"precoUnitario",label:"Preço unitário (R$)",type:"number",step:"0.01",round2:true},
+      {k:"unidade",label:"Unidade",type:"selectstatic",options:["Kg","L"],req:true},
+      {k:"precoUnitario",label:"Preço unitário (R$) — valor de 1 Kg ou 1 L",type:"number",step:"0.01",round2:true},
     ],
     columns:[
       {h:"Produto",v:r=>esc(r.nome)},
       {h:"Classe",v:r=>`<span class="badge ${esc(r.classe)}">${esc(r.classe)}</span>`},
       {h:"Alvo",v:r=>esc(r.pragaAlvo)||"—"},
       {h:"Dose",v:r=>esc(r.dose)||"—"},
+      {h:"Unidade",v:r=>esc(r.unidade)||"—"},
       {h:"Preço",v:r=>r.precoUnitario?fmtBRL(r.precoUnitario):"—"},
     ]
   },
@@ -600,7 +601,7 @@ const pageDescriptions = {
   clientes:"Base de clientes atendidos pela consultoria — pessoa física ou jurídica.",
   fazendas:"Fazendas vinculadas a cada cliente, com localização e responsável técnico designado.",
   talhoes:"Talhões alvo da aplicação, com hectares e cultura, vinculados à fazenda — que por sua vez pertence a um cliente.",
-  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo.",
+  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. O preço unitário é sempre o valor de 1 Kg ou 1 L do produto.",
   responsaveis:"Profissionais responsáveis técnicos e seus registros CFTA/CREA.",
   receituarios:"Receituário agronômico formal: vincula cliente → fazenda → talhões, produtos recomendados com dose e o responsável técnico emitente.",
   usuarios:"Contas de acesso à plataforma. Papel Administrador libera o Painel Administrativo e a gestão de usuários.",
@@ -1122,27 +1123,55 @@ function updateArtTrtStatus(){
   }
 }
 
-function doseToNumber(dose){
-  if(!dose) return null;
-  const m = String(dose).replace(',', '.').match(/[\d.]+/);
-  return m ? parseFloat(m[0]) : null;
+// Converte a dose informada (texto livre, ex: "500Gr/Ha", "1,5L/Ha") para a MESMA
+// unidade do preço unitário do produto (campo "Unidade" cadastrado em Produtos).
+// Sem essa conversão, "500Gr" seria multiplicado como se fosse "500Kg" — erro de 1000x.
+function normalizeUnit(u){
+  if(!u) return null;
+  let s = String(u).trim().toLowerCase();
+  if(s==='gr' || s==='gramas') s='g';
+  if(s==='litro' || s==='litros') s='l';
+  if(s==='quilo' || s==='quilos' || s==='kilo') s='kg';
+  if(s==='unid' || s==='unidade' || s==='unidades') s='un';
+  return s;
+}
+function parseDoseValue(dose, unidadeProduto){
+  if(!dose) return { value:null, confiavel:false };
+  const str = String(dose).replace(',', '.').toLowerCase();
+  const m = str.match(/([\d.]+)\s*(kg|gr|g|ml|l|unid|un)?/);
+  if(!m) return { value:null, confiavel:false };
+  let value = parseFloat(m[1]);
+  const doseUnit = normalizeUnit(m[2]);
+  const baseUnit = normalizeUnit(unidadeProduto);
+
+  if(!doseUnit || !baseUnit){
+    // Sem unidade declarada em um dos dois lados — usa o número puro, mas sinaliza como não confirmado.
+    return { value, confiavel:false };
+  }
+  if(doseUnit===baseUnit) return { value, confiavel:true };
+  if(doseUnit==='g' && baseUnit==='kg') return { value: value/1000, confiavel:true };
+  if(doseUnit==='kg' && baseUnit==='g') return { value: value*1000, confiavel:true };
+  if(doseUnit==='ml' && baseUnit==='l') return { value: value/1000, confiavel:true };
+  if(doseUnit==='l' && baseUnit==='ml') return { value: value*1000, confiavel:true };
+  // Combinação não reconhecida (ex: unidades incompatíveis) — não converte, sinaliza.
+  return { value, confiavel:false };
 }
 function calcCustoHa(listaProdutos){
   let total = 0;
   let faltaPreco = false;
+  let unidadeIncerta = false;
   let temItem = false;
   (listaProdutos||[]).forEach(row=>{
     if(!row.produtoId) return;
     temItem = true;
     const prod = DB.produtos.find(p=>p.id===row.produtoId);
-    const doseNum = doseToNumber(row.dose);
-    if(prod && prod.precoUnitario && doseNum!==null){
-      total += prod.precoUnitario * doseNum;
-    } else {
-      faltaPreco = true;
-    }
+    if(!prod || !prod.precoUnitario){ faltaPreco = true; return; }
+    const parsed = parseDoseValue(row.dose, prod.unidade);
+    if(parsed.value===null){ faltaPreco = true; return; }
+    total += prod.precoUnitario * parsed.value;
+    if(!parsed.confiavel) unidadeIncerta = true;
   });
-  return { total, faltaPreco, temItem };
+  return { total, faltaPreco, unidadeIncerta, temItem };
 }
 function updateCustoPreview(){
   const el = document.getElementById('rec_custoPreview');
@@ -1151,6 +1180,7 @@ function updateCustoPreview(){
   const c2 = calcCustoHa(recForm.herbicidas);
   const total = c1.total + c2.total;
   const faltaPreco = c1.faltaPreco || c2.faltaPreco;
+  const unidadeIncerta = c1.unidadeIncerta || c2.unidadeIncerta;
   const temItem = c1.temItem || c2.temItem;
   if(!temItem){
     el.innerHTML = `<b>Custo estimado do manejo:</b> selecione produtos para calcular.`;
@@ -1164,7 +1194,8 @@ function updateCustoPreview(){
   let html = `<b>Custo estimado do manejo:</b> ${fmtBRL(total)}/ha`;
   if(hectaresSelecionados>0) html += `<br><b>Custo total — talhões selecionados (${fmtHa(hectaresSelecionados)} ha):</b> ${fmtBRL(total*hectaresSelecionados)}`;
   if(areaFazenda>0) html += `<br><b>Custo total — área total da fazenda (${fmtHa(areaFazenda)} ha):</b> ${fmtBRL(total*areaFazenda)}`;
-  if(faltaPreco) html += ` <span style="color:var(--amber);">— um ou mais produtos sem preço ou dose numérica reconhecida; valor parcial.</span>`;
+  if(faltaPreco) html += `<br><span style="color:var(--amber);">⚠ um ou mais produtos sem preço cadastrado ou dose não reconhecida — valor parcial.</span>`;
+  if(unidadeIncerta) html += `<br><span style="color:var(--amber);">⚠ não foi possível confirmar a conversão de unidade (dose x preço) de um ou mais produtos — confira o campo "Unidade" em Produtos.</span>`;
   el.innerHTML = html;
 }
 
@@ -1206,6 +1237,7 @@ async function saveReceituario(){
   const round2 = v => Math.round(v*100)/100;
   recForm.custoHaCalculado = round2(custoCalc.total + custoCalcHerb.total);
   recForm.custoHaParcial = custoCalc.faltaPreco || custoCalcHerb.faltaPreco;
+  recForm.custoUnidadeIncerta = custoCalc.unidadeIncerta || custoCalcHerb.unidadeIncerta;
   const hectaresSelecionados = round2(DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0));
   recForm.custoTotalCalculado = round2(recForm.custoHaCalculado * hectaresSelecionados);
   const fazendaAtual = fazenda(recForm.fazendaId);
@@ -1366,7 +1398,7 @@ function openPrintView(id){
         <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
         <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
         <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
-        <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':''):'—'}</b></div>
+        <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':'')+(r.custoUnidadeIncerta?' (conferir unidade)':''):'—'}</b></div>
         <div class="row"><span>Custo total — talhões tratados</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado):'—'}</b></div>
         <div class="row"><span>Custo total — área total da fazenda</span><b>${r.custoTotalFazenda?fmtBRL(r.custoTotalFazenda):'—'}</b></div>
       </div>
