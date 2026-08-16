@@ -777,16 +777,32 @@ async function deleteRecord(moduleKey, id){
 
 /* ===================== ADMIN DASHBOARD ===================== */
 function renderAdminDashboard(){
+  const clientesAtendidosIds = new Set(DB.receituarios.map(r=>{ const f=fazenda(r.fazendaId); return f?f.clienteId:null; }).filter(Boolean));
+  const fazendasAtendidasIds = new Set(DB.receituarios.map(r=>r.fazendaId).filter(Boolean));
+
+  const painelPrincipal = [
+    {l:"Receituários emitidos", n:DB.receituarios.length},
+    {l:"Clientes atendidos", n:clientesAtendidosIds.size},
+    {l:"Fazendas atendidas", n:fazendasAtendidasIds.size},
+  ];
+
   const stats = [
-    {l:"Clientes", n:DB.clientes.length, k:"clientes"},
-    {l:"Fazendas", n:DB.fazendas.length, k:"fazendas"},
+    {l:"Clientes cadastrados", n:DB.clientes.length, k:"clientes"},
+    {l:"Fazendas cadastradas", n:DB.fazendas.length, k:"fazendas"},
     {l:"Talhões", n:DB.talhoes.length, k:"talhoes"},
     {l:"Produtos", n:DB.produtos.length, k:"produtos"},
     {l:"Responsáveis técnicos", n:DB.responsaveis.length, k:"responsaveis"},
-    {l:"Receituários emitidos", n:DB.receituarios.length, k:"receituarios"},
     {l:"Usuários da plataforma", n:DB.usuarios.length, k:"usuarios"},
   ];
   const recentes = DB.receituarios.slice(-5).reverse();
+
+  // Controle de ART/TRT: agrupa receituários por número informado
+  const artTrtMap = {};
+  DB.receituarios.forEach(r=>{
+    const key = (r.artTrt||"—").trim();
+    artTrtMap[key] = (artTrtMap[key]||0) + 1;
+  });
+  const artTrtRows = Object.entries(artTrtMap).sort((a,b)=>b[1]-a[1]);
 
   document.getElementById('pageContent').innerHTML = `
     <div class="pagehead">
@@ -796,6 +812,36 @@ function renderAdminDashboard(){
       </div>
     </div>
     <div class="shared-note">⚠ Os dados desta plataforma (clientes, fazendas, talhões, produtos, receituários e usuários) são compartilhados entre todos que acessam este link — não é um armazenamento individual por navegador.</div>
+
+    <div class="stat-grid">
+      ${painelPrincipal.map(s=>`
+        <div class="stat-card"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>
+      `).join('')}
+    </div>
+
+    <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Controle de ART/TRT (limite de ${ART_TRT_LIMITE} receituários por registro)</h2></div>
+    ${artTrtRows.length===0 ? `<div class="tablewrap"><div class="empty">Nenhum receituário emitido ainda.</div></div>` : `
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>ART/TRT</th><th>Receituários emitidos</th><th>Status</th></tr></thead>
+          <tbody>
+            ${artTrtRows.map(([artTrt,count])=>{
+              let status, color;
+              if(count >= ART_TRT_LIMITE){ status="Limite atingido"; color="var(--rust)"; }
+              else if(count >= ART_TRT_LIMITE-5){ status="Atenção — próximo do limite"; color="var(--amber)"; }
+              else { status="Regular"; color="var(--green)"; }
+              return `<tr>
+                <td class="mono">${esc(artTrt)}</td>
+                <td class="mono">${count} / ${ART_TRT_LIMITE}</td>
+                <td style="color:${color};font-weight:600;">${status}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `}
+
+    <div class="section-label" style="margin-top:20px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Cadastros gerais</h2></div>
     <div class="stat-grid">
       ${stats.map(s=>`
         <div class="stat-card" style="cursor:pointer;" onclick="setModule('${s.k}')">
@@ -804,11 +850,12 @@ function renderAdminDashboard(){
         </div>
       `).join('')}
     </div>
+
     <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Últimos receituários emitidos</h2></div>
     ${recentes.length===0 ? `<div class="tablewrap"><div class="empty">Nenhum receituário emitido ainda.</div></div>` : `
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Fazenda</th><th>Emitente</th><th>Emissão</th></tr></thead>
+          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Fazenda</th><th>Emitente</th><th>Custo/ha</th><th>Emissão</th></tr></thead>
           <tbody>
             ${recentes.map(r=>{
               const f = fazenda(r.fazendaId);
@@ -817,6 +864,7 @@ function renderAdminDashboard(){
                 <td class="mono">${r.codigoRastreio||'—'}</td>
                 <td>${f?f.nome:'—'}</td>
                 <td>${respLabel(r.responsavelId)}</td>
+                <td class="mono">${r.custoHaCalculado?fmtBRL(r.custoHaCalculado):'—'}</td>
                 <td>${fmtDate(r.dataEmissao)}</td>
               </tr>`;
             }).join('')}
@@ -839,7 +887,7 @@ function renderReceituarioPage(){
     tableHtml = `
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Cliente</th><th>Fazenda</th><th>Talhões</th><th>Emitente</th><th>ART/TRT</th><th>Emissão</th><th style="width:190px;">Ações</th></tr></thead>
+          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Cliente</th><th>Fazenda</th><th>Talhões</th><th>Emitente</th><th>ART/TRT</th><th>Custo/ha</th><th>Emissão</th><th style="width:190px;">Ações</th></tr></thead>
           <tbody>
             ${rows.slice().reverse().map(r=>{
               const f = fazenda(r.fazendaId);
@@ -851,6 +899,7 @@ function renderReceituarioPage(){
                 <td>${r.talhaoIds.map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${t.codigo}</span>`:"";}).join('')}</td>
                 <td>${respLabel(r.responsavelId)}</td>
                 <td class="mono">${r.artTrt||'—'}</td>
+                <td class="mono">${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+(r.custoHaParcial?' *':''):'—'}</td>
                 <td>${fmtDate(r.dataEmissao)}</td>
                 <td>
                   <div class="rowactions">
@@ -924,7 +973,8 @@ function openReceituarioForm(id){
       </div>
       <div class="f">
         <label>Número da ART/TRT <span class="req">*</span></label>
-        <input type="text" id="rec_artTrt" value="${esc(recForm.artTrt)}" placeholder="ex: ART 2026/000123-BA">
+        <input type="text" id="rec_artTrt" value="${esc(recForm.artTrt)}" placeholder="ex: ART 2026/000123-BA" oninput="updateArtTrtStatus()">
+        <div id="rec_artTrtStatus" class="subtle" style="margin-top:2px;"></div>
       </div>
       <div class="f span2">
         <label>Talhões alvo <span class="req">*</span></label>
@@ -953,6 +1003,8 @@ function openReceituarioForm(id){
     <div id="rec_herbicidasList"></div>
     <button type="button" class="addrow-btn" onclick="addProdRow('herbicidas')">+ Adicionar herbicida</button>
 
+    <div id="rec_custoPreview" class="obs-block" style="margin-top:16px;font-size:12.5px;"></div>
+
     <div class="f span2" style="margin-top:16px;">
       <label>Recomendações gerais</label>
       <textarea id="rec_recomendacoes">${esc(recForm.recomendacoes)}</textarea>
@@ -966,6 +1018,7 @@ function openReceituarioForm(id){
   renderTalhaoChecklist();
   renderProdRows('produtos');
   renderProdRows('herbicidas');
+  updateArtTrtStatus();
   document.getElementById('overlay').classList.add('open');
 }
 
@@ -1025,13 +1078,78 @@ function renderProdRows(listKey){
       <button type="button" class="rmbtn" onclick="removeProdRow('${listKey}',${idx})" title="Remover">✕</button>
     </div>
   `).join('');
+  updateCustoPreview();
 }
-function updateProdRow(listKey, idx, key, value){ recForm[listKey][idx][key] = value; }
+function updateProdRow(listKey, idx, key, value){ recForm[listKey][idx][key] = value; updateCustoPreview(); }
 function addProdRow(listKey){ recForm[listKey].push({produtoId:"",dose:"",obs:""}); renderProdRows(listKey); }
 function removeProdRow(listKey, idx){
   recForm[listKey].splice(idx,1);
   if(recForm[listKey].length===0) recForm[listKey].push({produtoId:"",dose:"",obs:""});
   renderProdRows(listKey);
+}
+
+const ART_TRT_LIMITE = 50;
+function countReceituariosByArtTrt(artTrt, excludeId){
+  if(!artTrt) return 0;
+  const alvo = artTrt.trim().toLowerCase();
+  return DB.receituarios.filter(r => r.id!==excludeId && (r.artTrt||"").trim().toLowerCase()===alvo).length;
+}
+function updateArtTrtStatus(){
+  const el = document.getElementById('rec_artTrtStatus');
+  const input = document.getElementById('rec_artTrt');
+  if(!el || !input) return;
+  const value = input.value.trim();
+  if(!value){ el.textContent = ""; el.style.color = ""; return; }
+  const usados = countReceituariosByArtTrt(value, editingId);
+  const proximo = usados + 1;
+  el.textContent = `${proximo} de ${ART_TRT_LIMITE} receituários com este ART/TRT`;
+  if(proximo > ART_TRT_LIMITE){
+    el.style.color = "var(--rust)";
+    el.textContent += " — LIMITE ULTRAPASSADO, renove o ART/TRT";
+  } else if(proximo >= ART_TRT_LIMITE - 5){
+    el.style.color = "var(--amber)";
+    el.textContent += " — próximo do limite";
+  } else {
+    el.style.color = "var(--ink-soft)";
+  }
+}
+
+function doseToNumber(dose){
+  if(!dose) return null;
+  const m = String(dose).replace(',', '.').match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : null;
+}
+function calcCustoHa(listaProdutos){
+  let total = 0;
+  let faltaPreco = false;
+  let temItem = false;
+  (listaProdutos||[]).forEach(row=>{
+    if(!row.produtoId) return;
+    temItem = true;
+    const prod = DB.produtos.find(p=>p.id===row.produtoId);
+    const doseNum = doseToNumber(row.dose);
+    if(prod && prod.precoUnitario && doseNum!==null){
+      total += prod.precoUnitario * doseNum;
+    } else {
+      faltaPreco = true;
+    }
+  });
+  return { total, faltaPreco, temItem };
+}
+function updateCustoPreview(){
+  const el = document.getElementById('rec_custoPreview');
+  if(!el) return;
+  const c1 = calcCustoHa(recForm.produtos);
+  const c2 = calcCustoHa(recForm.herbicidas);
+  const total = c1.total + c2.total;
+  const faltaPreco = c1.faltaPreco || c2.faltaPreco;
+  const temItem = c1.temItem || c2.temItem;
+  if(!temItem){
+    el.innerHTML = `<b>Custo estimado do manejo:</b> selecione produtos para calcular.`;
+    return;
+  }
+  el.innerHTML = `<b>Custo estimado do manejo:</b> ${fmtBRL(total)}/ha` +
+    (faltaPreco ? ` <span style="color:var(--amber);">— um ou mais produtos sem preço ou dose numérica reconhecida; valor parcial.</span>` : ``);
 }
 
 async function saveReceituario(){
@@ -1058,8 +1176,21 @@ async function saveReceituario(){
     return;
   }
 
+  const usadosArtTrt = countReceituariosByArtTrt(recForm.artTrt, editingId);
+  if(usadosArtTrt + 1 > ART_TRT_LIMITE){
+    const seguir = confirm(`Este ART/TRT já emitiu ${usadosArtTrt} receituários — o limite de ${ART_TRT_LIMITE} foi atingido. Recomenda-se renovar o ART/TRT antes de emitir novos. Deseja salvar mesmo assim?`);
+    if(!seguir) return;
+  }
+
   recForm.produtos = produtosValidos;
   recForm.herbicidas = herbicidasValidos;
+
+  const custoCalc = calcCustoHa(produtosValidos);
+  const custoCalcHerb = calcCustoHa(herbicidasValidos);
+  recForm.custoHaCalculado = custoCalc.total + custoCalcHerb.total;
+  recForm.custoHaParcial = custoCalc.faltaPreco || custoCalcHerb.faltaPreco;
+  const hectaresSelecionados = DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
+  recForm.custoTotalCalculado = recForm.custoHaCalculado * hectaresSelecionados;
 
   if(editingId){
     const idx = DB.receituarios.findIndex(r=>r.id===editingId);
@@ -1215,6 +1346,8 @@ function openPrintView(id){
         <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
         <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
         <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
+        <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':''):'—'}</b></div>
+        <div class="row"><span>Custo total estimado</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado):'—'}</b></div>
       </div>
 
       <div class="doc-section-title">Produtos recomendados — manejo de pragas e doenças</div>
