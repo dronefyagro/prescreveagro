@@ -220,6 +220,8 @@ tbody tr:hover{background:#F7F6EC;}
   body *{visibility:hidden;}
   #printArea, #printArea *{visibility:visible;}
   #printArea{position:absolute;left:0;top:0;width:100%;}
+  .overlay{position:static !important;display:block !important;overflow:visible !important;padding:0 !important;background:none !important;height:auto !important;}
+  .modal{position:static !important;max-width:100% !important;width:100% !important;box-shadow:none !important;border:none !important;border-radius:0 !important;padding:0 !important;}
   .no-print{display:none !important;}
 }
 
@@ -1276,6 +1278,8 @@ function openPrintView(id){
     </div>
   `;
   document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay').scrollTop = 0;
+  window.scrollTo(0,0);
 }
 
 /* ===================== INIT ===================== */
