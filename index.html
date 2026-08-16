@@ -1175,8 +1175,13 @@ function calcCustoHa(listaProdutos){
     if(!prod || !prod.precoUnitario){ faltaPreco = true; return; }
     const parsed = parseDoseValue(row.dose, prod.unidade);
     if(parsed.value===null){ faltaPreco = true; return; }
+    if(!parsed.confiavel){
+      // Não arrisca somar um valor não confirmado (poderia estar 1000x errado
+      // por falta de conversão g<->kg ou ml<->l). Fica de fora da soma, só sinalizado.
+      unidadeIncerta = true;
+      return;
+    }
     total += prod.precoUnitario * parsed.value;
-    if(!parsed.confiavel) unidadeIncerta = true;
   });
   return { total, faltaPreco, unidadeIncerta, temItem };
 }
@@ -1202,7 +1207,7 @@ function updateCustoPreview(){
   if(hectaresSelecionados>0) html += `<br><b>Custo total — talhões selecionados (${fmtHa(hectaresSelecionados)} ha):</b> ${fmtBRL(total*hectaresSelecionados)}`;
   if(areaFazenda>0) html += `<br><b>Custo total — área total da fazenda (${fmtHa(areaFazenda)} ha):</b> ${fmtBRL(total*areaFazenda)}`;
   if(faltaPreco) html += `<br><span style="color:var(--amber);">⚠ um ou mais produtos sem preço cadastrado ou dose não reconhecida — valor parcial.</span>`;
-  if(unidadeIncerta) html += `<br><span style="color:var(--amber);">⚠ não foi possível confirmar a conversão de unidade (dose x preço) de um ou mais produtos — confira o campo "Unidade" em Produtos.</span>`;
+  if(unidadeIncerta) html += `<br><span style="color:var(--amber);">⚠ um ou mais produtos NÃO entraram nessa soma — não foi possível confirmar a conversão de unidade (dose × preço). Confira o campo "Unidade" em Produtos e ajuste a dose se necessário.</span>`;
   el.innerHTML = html;
 }
 
@@ -1405,7 +1410,7 @@ function openPrintView(id){
         <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
         <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
         <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
-        <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':'')+(r.custoUnidadeIncerta?' (conferir unidade)':''):'—'}</b></div>
+        <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':'')+(r.custoUnidadeIncerta?' (produto(s) não incluído(s) — conferir unidade)':''):'—'}</b></div>
         <div class="row"><span>Custo total — talhões tratados</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado):'—'}</b></div>
         <div class="row"><span>Custo total — área total da fazenda</span><b>${r.custoTotalFazenda?fmtBRL(r.custoTotalFazenda):'—'}</b></div>
       </div>
