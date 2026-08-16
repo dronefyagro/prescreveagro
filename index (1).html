@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prescreve Agro</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2118">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prescreve Agro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EFEEE0; --paper-2:#E7E5D5; --ink:#1B2118; --ink-soft:#565A4C;
+  --green:#2E4B32; --green-soft:#3F6544; --amber:#A6672A; --soil:#6B4A2F;
+  --gold:#C99A3E; --rust:#954936; --line:#D7D3BE; --white:#FBFAF4; --herb:#7A6A2E;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+.display{font-family:'Fraunces',serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+.app{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:250px;flex-shrink:0;background:var(--ink);color:var(--paper);
+  padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+}
+.sidebar .brand{margin-bottom:26px;padding:0 6px;}
+.sidebar .brand .mark{font-family:'Fraunces',serif;font-weight:700;font-size:21px;}
+.sidebar .brand .tag{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-top:2px;}
+.sidebar .brand .sub{font-size:10.5px;color:#9B9E88;margin-top:6px;line-height:1.4;}
+.navlist{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
+.navitem{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#C9C6B4;
+  transition:background .12s ease;
+}
+.navitem:hover{background:#242B1D;}
+.navitem.active{background:var(--green);color:#fff;}
+.navitem .cnt{font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#00000030;padding:2px 7px;border-radius:10px;}
+.navitem.active .cnt{background:#ffffff30;}
+.navdivider{font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#7A7D68;margin:14px 6px 4px;font-weight:700;}
+.sidebar-foot{margin-top:auto;font-size:10px;color:#7A7D68;line-height:1.6;border-top:1px solid #333a2c;padding-top:12px;}
+
+/* MAIN */
+.main{flex:1;padding:28px 32px 60px;max-width:1180px;}
+.pagehead{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+.pagehead h1{font-family:'Fraunces',serif;font-weight:600;font-size:26px;margin:0 0 4px;}
+.pagehead p{font-size:12.5px;color:var(--ink-soft);margin:0;max-width:560px;line-height:1.5;}
+.btn{
+  border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:'IBM Plex Sans',sans-serif;transition:opacity .12s ease;
+}
+.btn:hover{opacity:0.88;}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+.btn-danger{background:transparent;color:var(--rust);border:1px solid #E0BEB5;}
+.btn-gold{background:var(--gold);color:var(--ink);}
+.btn-sm{padding:6px 11px;font-size:12px;border-radius:6px;}
+
+/* TABLE */
+.tablewrap{background:var(--white);border:1px solid var(--line);border-radius:10px;overflow:hidden;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink-soft);
+  background:var(--paper-2);padding:11px 14px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap;
+}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:#F7F6EC;}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:20px;color:#fff;}
+.badge.Biológico{background:var(--green);}
+.badge.Químico{background:var(--amber);}
+.badge.Orgânico{background:var(--soil);}
+.badge.Herbicida{background:var(--herb);}
+.rowactions{display:flex;gap:6px;flex-wrap:wrap;}
+.empty{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:13px;}
+.empty b{display:block;font-family:'Fraunces',serif;font-size:17px;color:var(--ink);margin-bottom:4px;font-weight:600;}
+.subtle{color:var(--ink-soft);font-size:11.5px;}
+.pill{display:inline-block;background:var(--paper-2);border:1px solid var(--line);font-size:11px;padding:2px 8px;border-radius:12px;margin:1px 3px 1px 0;}
+
+/* MODAL */
+.overlay{
+  position:fixed;inset:0;background:rgba(27,33,24,0.55);display:none;align-items:flex-start;justify-content:center;
+  padding:40px 16px;z-index:100;overflow:auto;
+}
+.overlay.open{display:flex;}
+.modal{
+  background:var(--white);border-radius:12px;max-width:640px;width:100%;padding:26px;
+  border:1px solid var(--line);
+}
+.modal.wide{max-width:760px;}
+.modal h2{font-family:'Fraunces',serif;font-size:19px;margin:0 0 4px;font-weight:600;}
+.modal .msub{font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.formgrid.one{grid-template-columns:1fr;}
+.f{display:flex;flex-direction:column;gap:5px;}
+.f.span2{grid-column:1/-1;}
+.f label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink-soft);font-weight:600;}
+.f input, .f select, .f textarea{
+  border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:9px 10px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:var(--ink);width:100%;
+}
+.f textarea{resize:vertical;min-height:56px;}
+.f input:focus, .f select:focus, .f textarea:focus{outline:2px solid var(--green-soft);outline-offset:1px;}
+.f input[readonly]{background:var(--paper-2);color:var(--ink-soft);}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.req{color:var(--rust);}
+.class-radio{display:flex;gap:8px;}
+.class-radio label{
+  flex:1;border:1px solid var(--line);border-radius:6px;padding:8px 6px;text-align:center;font-size:12px;
+  cursor:pointer;color:var(--ink-soft);font-weight:600;
+}
+.class-radio input{display:none;}
+.class-radio label:has(input:checked)[data-c="Biológico"]{background:var(--green);border-color:var(--green);color:#fff;}
+.class-radio label:has(input:checked)[data-c="Químico"]{background:var(--amber);border-color:var(--amber);color:#fff;}
+.class-radio label:has(input:checked)[data-c="Orgânico"]{background:var(--soil);border-color:var(--soil);color:#fff;}
+.class-radio label:has(input:checked)[data-c="Herbicida"]{background:var(--herb);border-color:var(--herb);color:#fff;}
+
+.checklist{border:1px solid var(--line);border-radius:8px;padding:10px;max-height:150px;overflow:auto;background:var(--paper);}
+.checkrow{display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:13px;}
+.checkrow input{accent-color:var(--green);width:15px;height:15px;}
+.checkempty{font-size:12px;color:var(--ink-soft);font-style:italic;padding:6px 2px;}
+
+.prodrow{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;}
+.prodrow .f{gap:4px;}
+.prodrow .f label{font-size:9.5px;}
+.rmbtn{background:transparent;border:1px solid #E0BEB5;color:var(--rust);border-radius:6px;padding:9px 10px;cursor:pointer;font-size:13px;}
+.addrow-btn{border:1px dashed var(--line);background:transparent;color:var(--green);font-weight:600;font-size:12.5px;padding:8px 12px;border-radius:6px;cursor:pointer;width:100%;margin-top:2px;}
+
+.toast{
+  position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--paper);padding:11px 16px;
+  border-radius:8px;font-size:12.5px;box-shadow:0 8px 20px rgba(0,0,0,0.2);z-index:200;
+  display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);transition:all .2s ease;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);}
+
+.loading{padding:60px;text-align:center;color:var(--ink-soft);font-size:13px;}
+
+/* ===== RECEITUÁRIO PRINT DOCUMENT ===== */
+.doc{background:#fff;color:#1B2118;padding:40px;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;}
+.doc-head{
+  display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;margin-bottom:20px;position:relative;
+  background-image: radial-gradient(circle, var(--paper) 3px, transparent 3.4px);
+  background-position: bottom; background-size: 14px 3px; background-repeat: repeat-x;
+}
+.doc-head::after{content:"";position:absolute;left:0;right:0;bottom:9px;height:2px;background:var(--gold);}
+.doc-head .brandrow{display:flex;align-items:center;gap:10px;}
+.doc-head .m{font-family:'Fraunces',serif;font-weight:700;font-size:22px;}
+.doc-head .t{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-top:2px;}
+.doc-head .num{font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:right;color:var(--ink-soft);}
+.doc h1{font-family:'Fraunces',serif;font-size:20px;text-align:center;margin:0 0 18px;text-transform:uppercase;letter-spacing:0.5px;}
+.doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 26px;font-size:12.5px;margin-bottom:16px;border:1px solid var(--line);border-radius:8px;padding:14px 16px;}
+.doc-grid .row{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:4px 0;}
+.doc-grid .row b{font-weight:600;}
+.doc-section-title{font-family:'Fraunces',serif;font-weight:600;font-size:14px;margin:18px 0 8px;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:4px;}
+.doc table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;}
+.doc table th{background:var(--paper-2);text-align:left;padding:7px 9px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;border:1px solid var(--line);}
+.doc table td{padding:7px 9px;border:1px solid var(--line);}
+.doc .obs-block{font-size:12.5px;line-height:1.6;background:var(--paper);border-radius:6px;padding:12px 14px;border:1px solid var(--line);}
+.doc .guide-block{margin-bottom:10px;}
+.doc .guide-block h3{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:12px;margin:0 0 4px;color:var(--ink);}
+.doc .guide-block ul{margin:0;padding-left:18px;font-size:12px;line-height:1.6;}
+.doc .guide-block p{margin:0;font-size:12px;line-height:1.6;}
+.doc .conf-block{font-size:10.5px;line-height:1.6;color:var(--ink-soft);margin-top:6px;}
+.doc .conf-block p{margin:0 0 6px;}
+.settings-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:14px;}
+.settings-card h3{font-family:'Fraunces',serif;font-size:15px;margin:0 0 8px;color:var(--green);font-weight:600;}
+.settings-card ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink);}
+.settings-card p{margin:0;font-size:13px;line-height:1.7;color:var(--ink);}
+
+/* LOGIN */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--ink);
+  background-image:radial-gradient(circle at 20% 20%, #24301f 0%, var(--ink) 60%);padding:20px;
+}
+.login-card{background:var(--white);border-radius:14px;padding:36px 34px;max-width:380px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.35);}
+.login-card .mark{font-family:'Fraunces',serif;font-weight:700;font-size:26px;color:var(--ink);}
+.login-card .tag{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:2px 0 22px;}
+.login-card .f{margin-bottom:14px;}
+.login-card .btn{width:100%;padding:11px;font-size:13.5px;margin-top:6px;}
+.login-error{background:#F3E4DC;color:var(--rust);font-size:12px;padding:9px 11px;border-radius:6px;margin-bottom:14px;display:none;}
+.login-error.show{display:block;}
+.login-hint{font-size:10.5px;color:var(--ink-soft);margin-top:18px;line-height:1.5;border-top:1px solid var(--line);padding-top:12px;}
+
+/* USER / ROLE */
+.badge.Administrador{background:var(--gold);color:var(--ink);}
+.badge.Técnico{background:var(--green-soft);}
+.userbox{display:flex;align-items:center;justify-content:space-between;background:#242B1D;border-radius:8px;padding:9px 12px;margin-bottom:10px;}
+.userbox .nm{font-size:12px;font-weight:600;color:var(--paper);}
+.userbox .rl{font-size:9.5px;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;}
+.logout-btn{background:transparent;border:1px solid #4A4E3F;color:#C9C6B4;font-size:11px;border-radius:6px;padding:5px 9px;cursor:pointer;}
+
+/* ADMIN DASHBOARD */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
+.stat-card .n{font-family:'Fraunces',serif;font-size:28px;font-weight:600;color:var(--green);}
+.stat-card .l{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-top:2px;}
+.shared-note{font-size:11px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:18px;}
+
+.doc .signature{margin-top:46px;text-align:center;}
+.doc .signature .line{border-top:1px solid var(--ink);width:280px;margin:0 auto 6px;}
+.doc .signature .nm{font-size:13px;font-weight:600;}
+.doc .signature .reg{font-size:11.5px;color:var(--ink-soft);}
+.doc .foot{margin-top:28px;font-size:9.5px;color:var(--ink-soft);text-align:center;border-top:1px solid var(--line);padding-top:10px;}
+
+.logomark{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brandrow{display:flex;align-items:center;gap:10px;}
+
+@media print{
+  body *{visibility:hidden;}
+  #printArea, #printArea *{visibility:visible;}
+  #printArea{position:absolute;left:0;top:0;width:100%;}
+  .no-print{display:none !important;}
+}
+
+@media(max-width:860px){
+  .app{flex-direction:column;}
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow:auto;padding:14px;}
+  .sidebar .brand{display:none;}
+  .navlist{flex-direction:row;}
+  .navdivider{display:none;}
+  .sidebar-foot{display:none;}
+  .main{padding:20px;}
+  .formgrid{grid-template-columns:1fr;}
+  .prodrow{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <div class="brandrow" style="margin-bottom:2px;">
+      <span class="logomark">
+        <svg width="30" height="30" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="34" height="34" rx="9" fill="#2E4B32"/>
+          <path d="M10 24C10 15 15 10 24 10C24 19 19 24 10 24Z" fill="#C99A3E"/>
+          <path d="M10.5 23.5L20 14" stroke="#1B2118" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <div class="mark">Prescreve Agro</div>
+    </div>
+    <div class="tag">Acesso restrito</div>
+    <div class="login-error" id="loginError">Usuário ou senha inválidos.</div>
+    <div class="f"><label>Usuário</label><input type="text" id="loginUser" autocomplete="username"></div>
+    <div class="f"><label>Senha</label><input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter') tryLogin();"></div>
+    <button class="btn btn-primary" onclick="tryLogin()">Entrar</button>
+    <div class="login-hint">Acesso interno da plataforma Prescreve Agro, operada pela Consultoria Dronefy-MAPCANA. Em caso de dúvida sobre suas credenciais, procure o administrador da plataforma.</div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brandrow">
+        <span class="logomark">
+          <svg width="26" height="26" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="34" height="34" rx="9" fill="#3F6544"/>
+            <path d="M10 24C10 15 15 10 24 10C24 19 19 24 10 24Z" fill="#C99A3E"/>
+            <path d="M10.5 23.5L20 14" stroke="#1B2118" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="mark">Prescreve Agro</div>
+      </div>
+      <div class="sub" style="margin-top:8px;">Cadastro de clientes, fazendas, talhões, produtos, responsáveis técnicos e receituários agronômicos.</div>
+    </div>
+    <div class="navlist" id="navlist"></div>
+    <div class="sidebar-foot">
+      <div class="userbox">
+        <div>
+          <div class="nm" id="userboxName"></div>
+          <div class="rl" id="userboxRole"></div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Sair</button>
+      </div>
+      Dados salvos automaticamente e compartilhados entre os usuários da plataforma.<br>Consultoria Dronefy-MAPCANA.
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<div class="toast no-print" id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
+
+<script>
+/* ===================== STATE & STORAGE ===================== */
+const MODULE_GROUPS = [
+  {label:"Base cadastral", keys:["clientes","fazendas","talhoes"]},
+  {label:"Catálogo", keys:["produtos","responsaveis"]},
+  {label:"Documentos", keys:["receituarios","diretrizes"]},
+  {label:"Administração", keys:["admin","usuarios"], adminOnly:true},
+];
+const MODULES = {
+  clientes: {label:"Clientes", icon:"👤"},
+  fazendas: {label:"Fazendas", icon:"🌾"},
+  talhoes: {label:"Talhões", icon:"🗺️"},
+  produtos: {label:"Produtos", icon:"🧪"},
+  responsaveis: {label:"Responsáveis Técnicos", icon:"🪪"},
+  receituarios: {label:"Receituário Agronômico", icon:"📋"},
+  diretrizes: {label:"Diretrizes Operacionais", icon:"📐", singleton:true},
+  admin: {label:"Painel Administrativo", icon:"🛡️", singleton:true, virtual:true, adminOnly:true},
+  usuarios: {label:"Usuários", icon:"🔑", adminOnly:true},
+};
+const DEFAULT_DIRETRIZES = {
+  ordemTanque:"70% de água → SD Fender → Pó molhável (WP) → Grânulos dispersíveis em água (WG) → Suspensão concentrada (SC) → Concentrado emulsionável (EC) → Concentrado solúvel (SL) → Fertilizantes foliares.",
+  modoPreparo:"Adicionar água limpa até 2/3 da capacidade do tanque.\nInserir SD Fender e o produto químico na dose recomendada.\nCompletar o volume com água, mantendo a agitação durante todo o processo e durante a aplicação.",
+  condicoesClimaticas:"Temperatura ambiente até 30ºC.\nUmidade relativa do ar mínima de 70%.\nVelocidade do vento entre 3 e 5 km/h.",
+  janelaOperacional:"Melhor eficiência de aplicação entre 17h e 9h.",
+  cuidados:"Informar antecipadamente qualquer substituição por produtos similares para validação de compatibilidade.\nNo uso de cortador de soqueira, verificar alinhamento dos discos e eventual entupimento de bicos.\nDirecionar o jato à base das touceiras, buscando aproximadamente 70% das plantas e 30% do solo.",
+  confidencialidade:"Este documento é uso exclusivo da Consultoria Dronefy-MAPCANA, a divulgação, compartilhamento ou repasse de informações a Terceiros é estritamente proibida sem prévia comunicação e autorização expressa, exceto os produtos e suas dosagens.\nEssa política visa proteger os interesses da Dronefy enquanto Consultoria e garantir que nosso modelo de informações não sejam copiados para fins não relacionados ao Programa MAPCANA."
+};
+const DEFAULT_ADMIN_USER = {usuario:"admin", senha:"mapcana2026", nome:"Administrador", papel:"Administrador", ativo:"Ativo"};
+let DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
+let currentUser = null;
+let activeModule = "clientes";
+let editingId = null;
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){
+  if(s===null||s===undefined) return "";
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadAll(){
+  for(const key of Object.keys(MODULES)){
+    if(MODULES[key].virtual) continue;
+    const isSingleton = MODULES[key].singleton;
+    try{
+      const res = await apiGet_(key);
+      DB[key] = res && res.value ? JSON.parse(res.value) : (isSingleton ? null : []);
+    }catch(e){
+      DB[key] = isSingleton ? null : [];
+    }
+    if(isSingleton && !DB[key]){
+      DB[key] = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
+    }
+  }
+  if(!DB.usuarios || DB.usuarios.length===0){
+    DB.usuarios = [{id:uid(), ...DEFAULT_ADMIN_USER}];
+    await persist("usuarios");
+  }
+}
+async function persist(key){
+  try{
+    await apiSet_(key, JSON.stringify(DB[key]));
+  }catch(e){
+    showToast("Falha ao salvar — verifique sua conexão e tente novamente.");
+  }
+}
+
+/* ===================== DATA API (Google Apps Script backend) ===================== */
+// Preencha com a URL do seu App da Web do Apps Script (veja Code.gs).
+// Enquanto estiver vazia, o app roda apenas localmente nesta aba/sessão.
+const API_BASE_URL = "https://script.google.com/macros/s/AKfycbypIXUPSNCalPL00R1gz2_yzAHkgoXopcgw0T1jV6k1wUEKi_oLGCxOGKKru9QGtPXjqw/exec";
+
+let __localFallback = {};
+async function apiGet_(key){
+  if(!API_BASE_URL || API_BASE_URL.startsWith("COLE_AQUI")){
+    return { key, value: __localFallback[key] || null };
+  }
+  const res = await fetch(`${API_BASE_URL}?key=${encodeURIComponent(key)}`);
+  return await res.json();
+}
+async function apiSet_(key, value){
+  if(!API_BASE_URL || API_BASE_URL.startsWith("COLE_AQUI")){
+    __localFallback[key] = value;
+    return { key, value };
+  }
+  const res = await fetch(API_BASE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // evita preflight CORS no Apps Script
+    body: JSON.stringify({ key, value })
+  });
+  return await res.json();
+}
+
+/* ===================== AUTH ===================== */
+function tryLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const match = DB.usuarios.find(x=>x.usuario===u && x.senha===p && x.ativo!=="Inativo");
+  const err = document.getElementById('loginError');
+  if(!match){
+    err.classList.add('show');
+    return;
+  }
+  err.classList.remove('show');
+  currentUser = match;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'flex';
+  document.getElementById('userboxName').textContent = currentUser.nome;
+  document.getElementById('userboxRole').textContent = currentUser.papel;
+  activeModule = "clientes";
+  renderNav();
+  renderPage();
+}
+function logout(){
+  currentUser = null;
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').classList.remove('show');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ===================== NAV ===================== */
+function renderNav(){
+  const nav = document.getElementById('navlist');
+  const groups = MODULE_GROUPS.filter(g => !g.adminOnly || (currentUser && currentUser.papel==="Administrador"));
+  nav.innerHTML = groups.map(g=>`
+    <div class="navdivider">${g.label}</div>
+    ${g.keys.map(key=>{
+      const m = MODULES[key];
+      return `<div class="navitem ${activeModule===key?'active':''}" onclick="setModule('${key}')">
+        <span>${m.icon} ${m.label}</span>
+        ${(m.singleton||m.virtual) ? '' : `<span class="cnt">${DB[key].length}</span>`}
+      </div>`;
+    }).join('')}
+  `).join('');
+}
+function setModule(key){
+  if(MODULES[key].adminOnly && (!currentUser || currentUser.papel!=="Administrador")) return;
+  activeModule = key;
+  renderNav();
+  renderPage();
+}
+
+/* ===================== HELPERS ===================== */
+function fazenda(id){ return DB.fazendas.find(x=>x.id===id); }
+function fazendaLabel(id){
+  const f = fazenda(id);
+  if(!f) return "—";
+  const c = DB.clientes.find(x=>x.id===f.clienteId);
+  return esc(f.nome) + (c ? ` (${esc(c.nome)})` : "");
+}
+function clienteLabel(id){
+  const c = DB.clientes.find(x=>x.id===id);
+  return c ? esc(c.nome) : "—";
+}
+function respLabel(id){
+  const r = DB.responsaveis.find(x=>x.id===id);
+  return r ? `${esc(r.nome)} · ${esc(r.tipoRegistro)} ${esc(r.numeroRegistro)}` : "—";
+}
+function produtoLabel(id){
+  const p = DB.produtos.find(x=>x.id===id);
+  return p ? esc(p.nome) : "—";
+}
+function fmtBRL(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtDate(v){
+  if(!v) return "—";
+  const [y,m,d] = v.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* ===================== FIELD DEFINITIONS (generic modules) ===================== */
+const FORMS = {
+  clientes: {
+    title:"Cliente",
+    fields:[
+      {k:"nome",label:"Nome / Razão social",type:"text",req:true,span2:true},
+      {k:"documento",label:"CPF / CNPJ",type:"text",req:true},
+      {k:"telefone",label:"Telefone",type:"text"},
+      {k:"email",label:"E-mail",type:"text"},
+      {k:"municipioUf",label:"Município / UF",type:"text"},
+      {k:"observacao",label:"Observação",type:"textarea",span2:true},
+    ],
+    columns:[
+      {h:"Nome",v:r=>esc(r.nome)},
+      {h:"Documento",v:r=>esc(r.documento)||"—"},
+      {h:"Contato",v:r=>esc(r.telefone||r.email)||"—"},
+      {h:"Local",v:r=>esc(r.municipioUf)||"—"},
+    ]
+  },
+  fazendas: {
+    title:"Fazenda",
+    fields:[
+      {k:"clienteId",label:"Cliente",type:"select",source:"clientes",req:true,span2:true},
+      {k:"nome",label:"Nome da fazenda",type:"text",req:true,span2:true},
+      {k:"municipio",label:"Município",type:"text"},
+      {k:"uf",label:"UF",type:"text"},
+      {k:"areaTotalHa",label:"Área total (ha)",type:"number"},
+      {k:"responsavelId",label:"Responsável técnico",type:"select",source:"responsaveis"},
+      {k:"observacao",label:"Observação",type:"textarea",span2:true},
+    ],
+    columns:[
+      {h:"Fazenda",v:r=>esc(r.nome)},
+      {h:"Cliente",v:r=>clienteLabel(r.clienteId)},
+      {h:"Local",v:r=>esc([r.municipio,r.uf].filter(Boolean).join("/"))||"—"},
+      {h:"Área total",v:r=>r.areaTotalHa?`${r.areaTotalHa} ha`:"—"},
+      {h:"Resp. técnico",v:r=>r.responsavelId?respLabel(r.responsavelId):"—"},
+    ]
+  },
+  talhoes: {
+    title:"Talhão",
+    fields:[
+      {k:"fazendaId",label:"Fazenda",type:"select",source:"fazendas",req:true,span2:true},
+      {k:"codigo",label:"Código / nome do talhão",type:"text",req:true},
+      {k:"hectares",label:"Hectares",type:"number",req:true},
+      {k:"cultura",label:"Cultura",type:"text"},
+      {k:"variedade",label:"Variedade",type:"text"},
+      {k:"observacao",label:"Observação",type:"textarea",span2:true},
+    ],
+    columns:[
+      {h:"Talhão",v:r=>esc(r.codigo)},
+      {h:"Fazenda",v:r=>fazendaLabel(r.fazendaId)},
+      {h:"Cliente",v:r=>{ const f=fazenda(r.fazendaId); return f?clienteLabel(f.clienteId):"—"; }},
+      {h:"Hectares",v:r=>r.hectares?`${r.hectares} ha`:"—"},
+      {h:"Cultura",v:r=>esc(r.cultura)||"—"},
+    ]
+  },
+  produtos: {
+    title:"Produto",
+    fields:[
+      {k:"nome",label:"Nome do produto",type:"text",req:true},
+      {k:"empresa",label:"Empresa / fabricante",type:"text"},
+      {k:"classe",label:"Classe",type:"class",req:true,span2:true},
+      {k:"principioAtivo",label:"Princípio ativo / cepa",type:"text",span2:true},
+      {k:"pragaAlvo",label:"Praga / doença / planta daninha-alvo",type:"textarea",span2:true},
+      {k:"dose",label:"Dose recomendada",type:"text"},
+      {k:"unidade",label:"Unidade",type:"text"},
+      {k:"precoUnitario",label:"Preço unitário (R$)",type:"number"},
+    ],
+    columns:[
+      {h:"Produto",v:r=>esc(r.nome)},
+      {h:"Classe",v:r=>`<span class="badge ${esc(r.classe)}">${esc(r.classe)}</span>`},
+      {h:"Alvo",v:r=>esc(r.pragaAlvo)||"—"},
+      {h:"Dose",v:r=>esc(r.dose)||"—"},
+      {h:"Preço",v:r=>r.precoUnitario?fmtBRL(r.precoUnitario):"—"},
+    ]
+  },
+  responsaveis: {
+    title:"Responsável Técnico",
+    fields:[
+      {k:"nome",label:"Nome completo",type:"text",req:true,span2:true},
+      {k:"tipoRegistro",label:"Tipo de registro",type:"selectstatic",options:["CFTA","CREA"],req:true},
+      {k:"numeroRegistro",label:"Número do registro",type:"text",req:true},
+      {k:"ufConselho",label:"UF do conselho",type:"text"},
+      {k:"telefone",label:"Telefone",type:"text"},
+      {k:"email",label:"E-mail",type:"text"},
+    ],
+    columns:[
+      {h:"Nome",v:r=>esc(r.nome)},
+      {h:"Registro",v:r=>esc(`${r.tipoRegistro||""} ${r.numeroRegistro||""}`.trim())||"—"},
+      {h:"UF",v:r=>esc(r.ufConselho)||"—"},
+      {h:"Contato",v:r=>esc(r.telefone||r.email)||"—"},
+    ]
+  },
+  usuarios: {
+    title:"Usuário",
+    fields:[
+      {k:"nome",label:"Nome completo",type:"text",req:true,span2:true},
+      {k:"usuario",label:"Usuário (login)",type:"text",req:true},
+      {k:"senha",label:"Senha",type:"password",req:true},
+      {k:"papel",label:"Papel",type:"selectstatic",options:["Administrador","Técnico"],req:true},
+      {k:"responsavelId",label:"Vincular a responsável técnico",type:"select",source:"responsaveis"},
+      {k:"ativo",label:"Status",type:"selectstatic",options:["Ativo","Inativo"],req:true},
+    ],
+    columns:[
+      {h:"Nome",v:r=>esc(r.nome)},
+      {h:"Usuário",v:r=>esc(r.usuario)},
+      {h:"Papel",v:r=>`<span class="badge ${esc(r.papel)}">${esc(r.papel)}</span>`},
+      {h:"Vínculo técnico",v:r=>r.responsavelId?respLabel(r.responsavelId):"—"},
+      {h:"Status",v:r=>r.ativo==="Inativo"?"Inativo":"Ativo"},
+    ]
+  },
+};
+
+const pageDescriptions = {
+  clientes:"Base de clientes atendidos pela consultoria — pessoa física ou jurídica.",
+  fazendas:"Fazendas vinculadas a cada cliente, com localização e responsável técnico designado.",
+  talhoes:"Talhões alvo da aplicação, com hectares e cultura, vinculados à fazenda — que por sua vez pertence a um cliente.",
+  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo.",
+  responsaveis:"Profissionais responsáveis técnicos e seus registros CFTA/CREA.",
+  receituarios:"Receituário agronômico formal: vincula cliente → fazenda → talhões, produtos recomendados com dose e o responsável técnico emitente.",
+  usuarios:"Contas de acesso à plataforma. Papel Administrador libera o Painel Administrativo e a gestão de usuários.",
+};
+
+/* ===================== PAGE RENDER ===================== */
+function renderPage(){
+  if(activeModule === "receituarios"){ renderReceituarioPage(); return; }
+  if(activeModule === "diretrizes"){ renderDiretrizesPage(); return; }
+  if(activeModule === "admin"){ renderAdminDashboard(); return; }
+
+  const mod = MODULES[activeModule];
+  const def = FORMS[activeModule];
+  const rows = DB[activeModule];
+
+  let tableHtml;
+  if(rows.length===0){
+    tableHtml = `<div class="tablewrap"><div class="empty"><b>Nenhum registro ainda</b>Cadastre o primeiro ${def.title.toLowerCase()} para começar.</div></div>`;
+  } else {
+    tableHtml = `
+      <div class="tablewrap">
+        <table>
+          <thead><tr>${def.columns.map(c=>`<th>${c.h}</th>`).join('')}<th style="width:110px;">Ações</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>`
+              <tr>
+                ${def.columns.map(c=>`<td>${c.v(r)}</td>`).join('')}
+                <td>
+                  <div class="rowactions">
+                    <button class="btn btn-ghost btn-sm" onclick="openForm('${activeModule}','${r.id}')">Editar</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteRecord('${activeModule}','${r.id}')">Excluir</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  document.getElementById('pageContent').innerHTML = `
+    <div class="pagehead">
+      <div>
+        <h1>${mod.icon} ${mod.label}</h1>
+        <p>${pageDescriptions[activeModule]}</p>
+      </div>
+      <button class="btn btn-primary" onclick="openForm('${activeModule}')">+ Novo ${def.title}</button>
+    </div>
+    ${tableHtml}
+  `;
+}
+
+/* ===================== GENERIC MODAL / FORM ===================== */
+function openForm(moduleKey, id){
+  editingId = id || null;
+  const def = FORMS[moduleKey];
+  const record = editingId ? DB[moduleKey].find(r=>r.id===editingId) : {};
+
+  const fieldsHtml = def.fields.map(f=>{
+    const val = record[f.k] ?? "";
+    const spanClass = f.span2 ? "f span2" : "f";
+    if(f.type==="select"){
+      const opts = DB[f.source].map(o=>`<option value="${o.id}" ${val===o.id?'selected':''}>${o.nome}</option>`).join('');
+      return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
+        <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
+    }
+    if(f.type==="selectstatic"){
+      const opts = f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
+      return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
+        <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
+    }
+    if(f.type==="textarea"){
+      return `<div class="${spanClass}"><label>${f.label}</label><textarea data-k="${f.k}">${esc(val)}</textarea></div>`;
+    }
+    if(f.type==="class"){
+      const classes = ["Biológico","Químico","Orgânico","Herbicida"];
+      return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
+        <div class="class-radio">
+          ${classes.map(c=>`<label data-c="${c}"><input type="radio" name="classe" value="${c}" data-k="classe" ${val===c?'checked':''}><span>${c}</span></label>`).join('')}
+        </div></div>`;
+    }
+    return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
+      <input type="${f.type}" data-k="${f.k}" value="${esc(val)}"></div>`;
+  }).join('');
+
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${editingId?'Editar':'Novo'} ${def.title}</h2>
+    <div class="msub">${editingId?'Atualize os dados do registro.':'Preencha os campos e salve para adicionar ao cadastro.'}</div>
+    <div class="formgrid" id="formFields">${fieldsHtml}</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRecord('${moduleKey}')">Salvar</button>
+    </div>
+  `;
+  document.getElementById('modalBody').className = 'modal';
+  document.getElementById('overlay').classList.add('open');
+}
+function closeForm(){
+  document.getElementById('overlay').classList.remove('open');
+  editingId = null;
+}
+async function saveRecord(moduleKey){
+  const def = FORMS[moduleKey];
+  const container = document.getElementById('formFields');
+  const record = editingId ? {...DB[moduleKey].find(r=>r.id===editingId)} : {id:uid()};
+
+  let missing = [];
+  def.fields.forEach(f=>{
+    let value;
+    if(f.type==="class"){
+      const checked = container.querySelector('input[name="classe"]:checked');
+      value = checked ? checked.value : "";
+    } else {
+      const el = container.querySelector(`[data-k="${f.k}"]`);
+      value = el ? el.value : "";
+      if(f.type==="number") value = value===""? null : parseFloat(value);
+    }
+    if(f.req && (value===""||value===null||value===undefined)) missing.push(f.label);
+    record[f.k] = value;
+  });
+
+  if(missing.length){
+    showToast(`Preencha: ${missing.join(', ')}`);
+    return;
+  }
+
+  if(editingId){
+    const idx = DB[moduleKey].findIndex(r=>r.id===editingId);
+    DB[moduleKey][idx] = record;
+  } else {
+    DB[moduleKey].push(record);
+  }
+  await persist(moduleKey);
+  closeForm();
+  renderNav();
+  renderPage();
+  showToast(`${def.title} salvo com sucesso.`);
+}
+const DEPENDENCIES = {
+  clientes: [{key:"fazendas", field:"clienteId", label:"fazenda(s) vinculada(s)"}],
+  fazendas: [{key:"talhoes", field:"fazendaId", label:"talhão(ões) vinculado(s)"}, {key:"receituarios", field:"fazendaId", label:"receituário(s) vinculado(s)"}],
+  talhoes: [{key:"receituarios", field:"talhaoIds", label:"receituário(s) vinculado(s)", isArrayField:true}],
+  produtos: [{key:"receituarios", field:"produtos", label:"receituário(s) vinculado(s)", isProductList:true}],
+  responsaveis: [{key:"fazendas", field:"responsavelId", label:"fazenda(s) vinculada(s)"}, {key:"receituarios", field:"responsavelId", label:"receituário(s) vinculado(s)"}],
+};
+function findDependents(moduleKey, id){
+  const rules = DEPENDENCIES[moduleKey] || [];
+  for(const rule of rules){
+    let count;
+    if(rule.isArrayField) count = DB[rule.key].filter(r=>(r[rule.field]||[]).includes(id)).length;
+    else if(rule.isProductList) count = DB[rule.key].filter(r=>(r.produtos||[]).some(p=>p.produtoId===id)).length;
+    else count = DB[rule.key].filter(r=>r[rule.field]===id).length;
+    if(count>0) return {count, label:rule.label};
+  }
+  return null;
+}
+async function deleteRecord(moduleKey, id){
+  const dep = findDependents(moduleKey, id);
+  if(dep){
+    showToast(`Não é possível excluir: existem ${dep.count} ${dep.label}.`);
+    return;
+  }
+  if(moduleKey==="usuarios"){
+    const target = DB.usuarios.find(u=>u.id===id);
+    const activeAdmins = DB.usuarios.filter(u=>u.papel==="Administrador" && u.ativo!=="Inativo");
+    if(target && target.papel==="Administrador" && activeAdmins.length<=1){
+      showToast("Não é possível excluir o último administrador ativo.");
+      return;
+    }
+  }
+  if(!confirm("Excluir este registro? Essa ação não pode ser desfeita.")) return;
+  DB[moduleKey] = DB[moduleKey].filter(r=>r.id!==id);
+  await persist(moduleKey);
+  renderNav();
+  renderPage();
+  showToast("Registro excluído.");
+}
+
+/* ===================== ADMIN DASHBOARD ===================== */
+function renderAdminDashboard(){
+  const stats = [
+    {l:"Clientes", n:DB.clientes.length, k:"clientes"},
+    {l:"Fazendas", n:DB.fazendas.length, k:"fazendas"},
+    {l:"Talhões", n:DB.talhoes.length, k:"talhoes"},
+    {l:"Produtos", n:DB.produtos.length, k:"produtos"},
+    {l:"Responsáveis técnicos", n:DB.responsaveis.length, k:"responsaveis"},
+    {l:"Receituários emitidos", n:DB.receituarios.length, k:"receituarios"},
+    {l:"Usuários da plataforma", n:DB.usuarios.length, k:"usuarios"},
+  ];
+  const recentes = DB.receituarios.slice(-5).reverse();
+
+  document.getElementById('pageContent').innerHTML = `
+    <div class="pagehead">
+      <div>
+        <h1>🛡️ Painel Administrativo</h1>
+        <p>Visão geral da plataforma. Todos os cadastros abaixo são compartilhados entre os usuários com acesso.</p>
+      </div>
+    </div>
+    <div class="shared-note">⚠ Os dados desta plataforma (clientes, fazendas, talhões, produtos, receituários e usuários) são compartilhados entre todos que acessam este link — não é um armazenamento individual por navegador.</div>
+    <div class="stat-grid">
+      ${stats.map(s=>`
+        <div class="stat-card" style="cursor:pointer;" onclick="setModule('${s.k}')">
+          <div class="n">${s.n}</div>
+          <div class="l">${s.l}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Últimos receituários emitidos</h2></div>
+    ${recentes.length===0 ? `<div class="tablewrap"><div class="empty">Nenhum receituário emitido ainda.</div></div>` : `
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Fazenda</th><th>Emitente</th><th>Emissão</th></tr></thead>
+          <tbody>
+            ${recentes.map(r=>{
+              const f = fazenda(r.fazendaId);
+              return `<tr>
+                <td class="mono">${r.numero}</td>
+                <td class="mono">${r.codigoRastreio||'—'}</td>
+                <td>${f?f.nome:'—'}</td>
+                <td>${respLabel(r.responsavelId)}</td>
+                <td>${fmtDate(r.dataEmissao)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `}
+  `;
+}
+
+/* ===================== RECEITUÁRIO AGRONÔMICO (custom module) ===================== */
+let recForm = { fazendaId:"", talhaoIds:[], responsavelId:"", dataEmissao:"", validade:"", pragaAlvo:"", recomendacoes:"", produtos:[], herbicidas:[] };
+
+function renderReceituarioPage(){
+  const rows = DB.receituarios;
+  let tableHtml;
+  if(rows.length===0){
+    tableHtml = `<div class="tablewrap"><div class="empty"><b>Nenhum receituário emitido</b>Emita o primeiro receituário agronômico vinculando fazenda, talhões e responsável técnico.</div></div>`;
+  } else {
+    tableHtml = `
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Cliente</th><th>Fazenda</th><th>Talhões</th><th>Emitente</th><th>ART/TRT</th><th>Emissão</th><th style="width:190px;">Ações</th></tr></thead>
+          <tbody>
+            ${rows.slice().reverse().map(r=>{
+              const f = fazenda(r.fazendaId);
+              return `<tr>
+                <td class="mono">${r.numero}</td>
+                <td class="mono">${r.codigoRastreio||'—'}</td>
+                <td>${f?clienteLabel(f.clienteId):"—"}</td>
+                <td>${f?f.nome:"—"}</td>
+                <td>${r.talhaoIds.map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${t.codigo}</span>`:"";}).join('')}</td>
+                <td>${respLabel(r.responsavelId)}</td>
+                <td class="mono">${r.artTrt||'—'}</td>
+                <td>${fmtDate(r.dataEmissao)}</td>
+                <td>
+                  <div class="rowactions">
+                    <button class="btn btn-gold btn-sm" onclick="openPrintView('${r.id}')">Ver/Imprimir</button>
+                    <button class="btn btn-ghost btn-sm" onclick="openReceituarioForm('${r.id}')">Editar</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteRecord('receituarios','${r.id}')">Excluir</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  document.getElementById('pageContent').innerHTML = `
+    <div class="pagehead">
+      <div>
+        <h1>📋 Receituário Agronômico</h1>
+        <p>${pageDescriptions.receituarios}</p>
+      </div>
+      <button class="btn btn-primary" onclick="openReceituarioForm()">+ Novo Receituário</button>
+    </div>
+    ${tableHtml}
+  `;
+}
+
+function nextReceituarioNumero(){
+  let max = 0;
+  DB.receituarios.forEach(r=>{
+    const m = /REC-(\d+)/.exec(r.numero||"");
+    if(m) max = Math.max(max, parseInt(m[1],10));
+  });
+  return `REC-${String(max+1).padStart(4,'0')}`;
+}
+
+function openReceituarioForm(id){
+  editingId = id || null;
+  const record = editingId ? DB.receituarios.find(r=>r.id===editingId) : null;
+
+  recForm = record ? JSON.parse(JSON.stringify(record)) : {
+    fazendaId:"", talhaoIds:[], responsavelId:"", artTrt:"", dataEmissao: new Date().toISOString().slice(0,10),
+    validade:"", pragaAlvo:"", recomendacoes:"", produtos:[{produtoId:"",dose:"",obs:""}]
+  };
+  if(!recForm.produtos || recForm.produtos.length===0) recForm.produtos = [{produtoId:"",dose:"",obs:""}];
+  if(!recForm.herbicidas || recForm.herbicidas.length===0) recForm.herbicidas = [{produtoId:"",dose:"",obs:""}];
+
+  document.getElementById('modalBody').className = 'modal wide';
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${editingId?'Editar':'Novo'} Receituário Agronômico</h2>
+    <div class="msub">Vincule a fazenda (o cliente é herdado automaticamente), selecione os talhões, o responsável técnico emitente e os produtos recomendados.</div>
+    <div class="formgrid" id="recFormTop">
+      <div class="f span2">
+        <label>Fazenda <span class="req">*</span></label>
+        <select id="rec_fazendaId" onchange="onRecFazendaChange(this.value)">
+          <option value="">Selecione…</option>
+          ${DB.fazendas.map(f=>`<option value="${f.id}" ${recForm.fazendaId===f.id?'selected':''}>${f.nome}</option>`).join('')}
+        </select>
+      </div>
+      <div class="f">
+        <label>Cliente (automático)</label>
+        <input type="text" id="rec_clienteDisplay" readonly value="${recForm.fazendaId ? clienteLabel(fazenda(recForm.fazendaId)?.clienteId) : '—'}">
+      </div>
+      <div class="f">
+        <label>Responsável técnico (emitente) <span class="req">*</span></label>
+        <select id="rec_responsavelId">
+          <option value="">Selecione…</option>
+          ${DB.responsaveis.map(r=>`<option value="${r.id}" ${recForm.responsavelId===r.id?'selected':''}>${r.nome} — ${r.tipoRegistro} ${r.numeroRegistro}</option>`).join('')}
+        </select>
+      </div>
+      <div class="f">
+        <label>Número da ART/TRT <span class="req">*</span></label>
+        <input type="text" id="rec_artTrt" value="${esc(recForm.artTrt)}" placeholder="ex: ART 2026/000123-BA">
+      </div>
+      <div class="f span2">
+        <label>Talhões alvo <span class="req">*</span></label>
+        <div class="checklist" id="rec_talhoesList"></div>
+      </div>
+      <div class="f">
+        <label>Data de emissão <span class="req">*</span></label>
+        <input type="date" id="rec_dataEmissao" value="${recForm.dataEmissao}">
+      </div>
+      <div class="f">
+        <label>Validade</label>
+        <input type="date" id="rec_validade" value="${recForm.validade}">
+      </div>
+      <div class="f span2">
+        <label>Praga / doença-alvo</label>
+        <input type="text" id="rec_pragaAlvo" value="${esc(recForm.pragaAlvo)}" placeholder="ex: Complexo cigarrinhas, Broca Gigante...">
+      </div>
+    </div>
+
+    <div class="doc-section-title" style="margin-top:20px;">Produtos recomendados — manejo de pragas e doenças</div>
+    <div id="rec_produtosList"></div>
+    <button type="button" class="addrow-btn" onclick="addProdRow('produtos')">+ Adicionar produto</button>
+
+    <div class="doc-section-title" style="margin-top:20px;">Herbicidas recomendados</div>
+    <div class="subtle" style="margin-bottom:8px;">Opcional. As diretrizes operacionais recomendam aplicação em tanque separado — verificar compatibilidade antes de misturar.</div>
+    <div id="rec_herbicidasList"></div>
+    <button type="button" class="addrow-btn" onclick="addProdRow('herbicidas')">+ Adicionar herbicida</button>
+
+    <div class="f span2" style="margin-top:16px;">
+      <label>Recomendações gerais</label>
+      <textarea id="rec_recomendacoes">${esc(recForm.recomendacoes)}</textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveReceituario()">Salvar Receituário</button>
+    </div>
+  `;
+  renderTalhaoChecklist();
+  renderProdRows('produtos');
+  renderProdRows('herbicidas');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function onRecFazendaChange(fazendaId){
+  recForm.fazendaId = fazendaId;
+  recForm.talhaoIds = [];
+  document.getElementById('rec_clienteDisplay').value = fazendaId ? clienteLabel(fazenda(fazendaId)?.clienteId) : '—';
+  renderTalhaoChecklist();
+}
+function renderTalhaoChecklist(){
+  const list = document.getElementById('rec_talhoesList');
+  const talhoes = DB.talhoes.filter(t=>t.fazendaId===recForm.fazendaId);
+  if(!recForm.fazendaId){
+    list.innerHTML = `<div class="checkempty">Selecione uma fazenda primeiro.</div>`;
+    return;
+  }
+  if(talhoes.length===0){
+    list.innerHTML = `<div class="checkempty">Essa fazenda ainda não tem talhões cadastrados.</div>`;
+    return;
+  }
+  list.innerHTML = talhoes.map(t=>`
+    <label class="checkrow">
+      <input type="checkbox" value="${t.id}" ${recForm.talhaoIds.includes(t.id)?'checked':''} onchange="toggleTalhao('${t.id}', this.checked)">
+      ${esc(t.codigo)} — ${esc(t.hectares)||'?'} ha ${t.cultura?`(${esc(t.cultura)})`:''}
+    </label>
+  `).join('');
+}
+function toggleTalhao(id, checked){
+  if(checked) recForm.talhaoIds.push(id);
+  else recForm.talhaoIds = recForm.talhaoIds.filter(x=>x!==id);
+}
+
+function classFilterFor(listKey){
+  return listKey==='herbicidas' ? (c=>c==='Herbicida') : (c=>c!=='Herbicida');
+}
+function renderProdRows(listKey){
+  const wrap = document.getElementById(listKey==='herbicidas' ? 'rec_herbicidasList' : 'rec_produtosList');
+  const filter = classFilterFor(listKey);
+  const options = DB.produtos.filter(p=>filter(p.classe));
+  wrap.innerHTML = recForm[listKey].map((row,idx)=>`
+    <div class="prodrow">
+      <div class="f">
+        <label>Produto</label>
+        <select onchange="updateProdRow('${listKey}',${idx},'produtoId',this.value)">
+          <option value="">Selecione…</option>
+          ${options.map(p=>`<option value="${p.id}" ${row.produtoId===p.id?'selected':''}>${esc(p.nome)} (${esc(p.classe)})</option>`).join('')}
+        </select>
+      </div>
+      <div class="f">
+        <label>Dose aplicada</label>
+        <input type="text" value="${esc(row.dose)}" placeholder="ex: 1 L/ha" oninput="updateProdRow('${listKey}',${idx},'dose',this.value)">
+      </div>
+      <div class="f">
+        <label>Observação</label>
+        <input type="text" value="${esc(row.obs)}" placeholder="opcional" oninput="updateProdRow('${listKey}',${idx},'obs',this.value)">
+      </div>
+      <button type="button" class="rmbtn" onclick="removeProdRow('${listKey}',${idx})" title="Remover">✕</button>
+    </div>
+  `).join('');
+}
+function updateProdRow(listKey, idx, key, value){ recForm[listKey][idx][key] = value; }
+function addProdRow(listKey){ recForm[listKey].push({produtoId:"",dose:"",obs:""}); renderProdRows(listKey); }
+function removeProdRow(listKey, idx){
+  recForm[listKey].splice(idx,1);
+  if(recForm[listKey].length===0) recForm[listKey].push({produtoId:"",dose:"",obs:""});
+  renderProdRows(listKey);
+}
+
+async function saveReceituario(){
+  recForm.fazendaId = document.getElementById('rec_fazendaId').value;
+  recForm.responsavelId = document.getElementById('rec_responsavelId').value;
+  recForm.artTrt = document.getElementById('rec_artTrt').value;
+  recForm.dataEmissao = document.getElementById('rec_dataEmissao').value;
+  recForm.validade = document.getElementById('rec_validade').value;
+  recForm.pragaAlvo = document.getElementById('rec_pragaAlvo').value;
+  recForm.recomendacoes = document.getElementById('rec_recomendacoes').value;
+  const produtosValidos = recForm.produtos.filter(p=>p.produtoId);
+  const herbicidasValidos = recForm.herbicidas.filter(p=>p.produtoId);
+
+  let missing = [];
+  if(!recForm.fazendaId) missing.push("Fazenda");
+  if(!recForm.responsavelId) missing.push("Responsável técnico");
+  if(!recForm.artTrt) missing.push("Número da ART/TRT");
+  if(!recForm.dataEmissao) missing.push("Data de emissão");
+  if(recForm.talhaoIds.length===0) missing.push("Talhões alvo");
+  if(produtosValidos.length===0) missing.push("ao menos 1 produto");
+
+  if(missing.length){
+    showToast(`Preencha: ${missing.join(', ')}`);
+    return;
+  }
+
+  recForm.produtos = produtosValidos;
+  recForm.herbicidas = herbicidasValidos;
+
+  if(editingId){
+    const idx = DB.receituarios.findIndex(r=>r.id===editingId);
+    recForm.id = editingId;
+    recForm.numero = DB.receituarios[idx].numero;
+    recForm.codigoRastreio = DB.receituarios[idx].codigoRastreio || genRastreio(recForm.dataEmissao);
+    DB.receituarios[idx] = recForm;
+  } else {
+    recForm.id = uid();
+    recForm.numero = nextReceituarioNumero();
+    recForm.codigoRastreio = genRastreio(recForm.dataEmissao);
+    DB.receituarios.push(recForm);
+  }
+  await persist("receituarios");
+  closeForm();
+  renderNav();
+  renderPage();
+  showToast(`Receituário ${recForm.numero} salvo — código ${recForm.codigoRastreio}.`);
+}
+function genRastreio(dataEmissao){
+  const d = (dataEmissao || new Date().toISOString().slice(0,10)).replace(/-/g,'');
+  const rand = Math.random().toString(36).slice(2,7).toUpperCase();
+  return `MAP-${d}-${rand}`;
+}
+
+/* ===================== DIRETRIZES OPERACIONAIS (singleton) ===================== */
+function bulletListHtml(text){
+  const lines = (text||"").split("\n").map(l=>l.trim()).filter(Boolean);
+  if(lines.length<=1) return `<p>${lines[0]||""}</p>`;
+  return `<ul>${lines.map(l=>`<li>${l}</li>`).join('')}</ul>`;
+}
+function paragraphsHtml(text){
+  return (text||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>`<p>${l}</p>`).join('');
+}
+
+const DIRETRIZES_SECTIONS = [
+  {k:"ordemTanque", label:"Ordem de tanque"},
+  {k:"modoPreparo", label:"Modo de preparo da calda"},
+  {k:"condicoesClimaticas", label:"Condições climáticas recomendadas"},
+  {k:"janelaOperacional", label:"Janela operacional"},
+  {k:"cuidados", label:"Cuidados e compatibilidade"},
+];
+
+function diretrizesGuideBlockHtml(d){
+  return DIRETRIZES_SECTIONS.map(s=>`
+    <div class="guide-block">
+      <h3>${s.label}</h3>
+      ${bulletListHtml(d[s.k])}
+    </div>
+  `).join('');
+}
+function diretrizesConfBlockHtml(d){
+  return `<div class="conf-block"><b>Confidencialidade</b>${paragraphsHtml(d.confidencialidade)}</div>`;
+}
+
+function renderDiretrizesPage(){
+  const d = DB.diretrizes;
+  document.getElementById('pageContent').innerHTML = `
+    <div class="pagehead">
+      <div>
+        <h1>📐 Diretrizes Operacionais</h1>
+        <p>Este conteúdo é impresso automaticamente em todo receituário agronômico emitido. Edite aqui quando houver mudança de protocolo.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openDiretrizesForm()">Editar diretrizes</button>
+    </div>
+    ${DIRETRIZES_SECTIONS.map(s=>`
+      <div class="settings-card"><h3>${s.label}</h3>${bulletListHtml(d[s.k])}</div>
+    `).join('')}
+    <div class="settings-card"><h3>Confidencialidade</h3>${paragraphsHtml(d.confidencialidade)}</div>
+  `;
+}
+
+function openDiretrizesForm(){
+  const d = DB.diretrizes;
+  document.getElementById('modalBody').className = 'modal wide';
+  document.getElementById('modalBody').innerHTML = `
+    <h2>Editar Diretrizes Operacionais</h2>
+    <div class="msub">Uma linha = um item da lista (exceto ordem de tanque, que é uma frase única). Esse conteúdo passa a valer para todos os próximos receituários impressos.</div>
+    <div class="formgrid one" id="diretrizesFields">
+      ${DIRETRIZES_SECTIONS.map(s=>`
+        <div class="f"><label>${s.label}</label><textarea data-k="${s.k}" style="min-height:${s.k==='ordemTanque'?'44px':'86px'};">${d[s.k]||''}</textarea></div>
+      `).join('')}
+      <div class="f"><label>Confidencialidade</label><textarea data-k="confidencialidade" style="min-height:100px;">${d.confidencialidade||''}</textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
+      <button class="btn btn-ghost" onclick="resetDiretrizes()">Restaurar padrão</button>
+      <button class="btn btn-primary" onclick="saveDiretrizes()">Salvar diretrizes</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('open');
+}
+async function saveDiretrizes(){
+  const container = document.getElementById('diretrizesFields');
+  const updated = {...DB.diretrizes};
+  [...DIRETRIZES_SECTIONS.map(s=>s.k), "confidencialidade"].forEach(k=>{
+    const el = container.querySelector(`[data-k="${k}"]`);
+    updated[k] = el ? el.value : updated[k];
+  });
+  DB.diretrizes = updated;
+  await persist("diretrizes");
+  closeForm();
+  renderPage();
+  showToast("Diretrizes operacionais atualizadas.");
+}
+function resetDiretrizes(){
+  if(!confirm("Restaurar o texto padrão das diretrizes? As edições atuais serão substituídas.")) return;
+  DB.diretrizes = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
+  openDiretrizesForm();
+}
+
+/* ===================== PRINT VIEW ===================== */
+function openPrintView(id){
+  const r = DB.receituarios.find(x=>x.id===id);
+  if(!r) return;
+  const f = fazenda(r.fazendaId);
+  const c = f ? DB.clientes.find(x=>x.id===f.clienteId) : null;
+  const resp = DB.responsaveis.find(x=>x.id===r.responsavelId);
+  const talhoesInfo = r.talhaoIds.map(tid=>DB.talhoes.find(t=>t.id===tid)).filter(Boolean);
+  const totalHa = talhoesInfo.reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
+
+  document.getElementById('modalBody').className = 'modal wide';
+  document.getElementById('modalBody').innerHTML = `
+    <div id="printArea" class="doc">
+      <div class="doc-head">
+        <div class="brandrow">
+          <span class="logomark">
+            <svg width="30" height="30" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="34" height="34" rx="9" fill="#2E4B32"/>
+              <path d="M10 24C10 15 15 10 24 10C24 19 19 24 10 24Z" fill="#C99A3E"/>
+              <path d="M10.5 23.5L20 14" stroke="#1B2118" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <div>
+            <div class="m">Prescreve Agro</div>
+            <div class="t">Consultoria Dronefy-MAPCANA</div>
+          </div>
+        </div>
+        <div class="num">Nº ${r.numero}<br><span style="color:var(--gold);font-weight:700;">${r.codigoRastreio||''}</span>${r.validade?`<br>Válido até ${fmtDate(r.validade)}`:''}</div>
+      </div>
+      <h1>Receituário Agronômico</h1>
+      <div style="text-align:center;font-size:10.5px;color:var(--ink-soft);margin-top:-14px;margin-bottom:16px;">Emitido em ${fmtDate(r.dataEmissao)} · Código de rastreabilidade: <b class="mono">${r.codigoRastreio||'—'}</b></div>
+
+      <div class="doc-grid">
+        <div class="row"><span>Cliente</span><b>${c?esc(c.nome):'—'}</b></div>
+        <div class="row"><span>Documento</span><b>${esc(c?.documento)||'—'}</b></div>
+        <div class="row"><span>Fazenda</span><b>${f?esc(f.nome):'—'}</b></div>
+        <div class="row"><span>Local</span><b>${f?esc([f.municipio,f.uf].filter(Boolean).join('/'))||'—':'—'}</b></div>
+        <div class="row"><span>Talhões</span><b>${esc(talhoesInfo.map(t=>t.codigo).join(', '))||'—'}</b></div>
+        <div class="row"><span>Área total tratada</span><b>${totalHa?totalHa+' ha':'—'}</b></div>
+        <div class="row"><span>Praga / doença-alvo</span><b>${esc(r.pragaAlvo)||'—'}</b></div>
+        <div class="row"><span>Cultura</span><b>${esc(talhoesInfo[0]?.cultura)||'Cana-de-açúcar'}</b></div>
+        <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
+        <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
+        <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
+      </div>
+
+      <div class="doc-section-title">Produtos recomendados — manejo de pragas e doenças</div>
+      <table>
+        <thead><tr><th>Produto</th><th>Classe</th><th>Princípio ativo</th><th>Dose aplicada</th><th>Observação</th></tr></thead>
+        <tbody>
+          ${r.produtos.map(p=>{
+            const prod = DB.produtos.find(x=>x.id===p.produtoId);
+            return `<tr>
+              <td>${prod?esc(prod.nome):'—'}</td>
+              <td>${prod?esc(prod.classe):'—'}</td>
+              <td>${esc(prod?.principioAtivo)||'—'}</td>
+              <td>${esc(p.dose)||'—'}</td>
+              <td>${esc(p.obs)||'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+
+      ${(r.herbicidas && r.herbicidas.length>0) ? `
+        <div class="doc-section-title">Herbicidas recomendados</div>
+        <table>
+          <thead><tr><th>Produto</th><th>Princípio ativo</th><th>Dose aplicada</th><th>Observação</th></tr></thead>
+          <tbody>
+            ${r.herbicidas.map(p=>{
+              const prod = DB.produtos.find(x=>x.id===p.produtoId);
+              return `<tr>
+                <td>${prod?esc(prod.nome):'—'}</td>
+                <td>${esc(prod?.principioAtivo)||'—'}</td>
+                <td>${esc(p.dose)||'—'}</td>
+                <td>${esc(p.obs)||'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <div class="obs-block" style="margin-top:-6px;font-size:11.5px;">⚠ Aplicar herbicida em tanque separado dos demais produtos, conforme diretrizes de compatibilidade.</div>
+      ` : ''}
+
+      ${r.recomendacoes ? `
+        <div class="doc-section-title">Recomendações gerais</div>
+        <div class="obs-block">${esc(r.recomendacoes).replace(/\n/g,'<br>')}</div>
+      ` : ''}
+
+      <div class="signature">
+        <div class="line"></div>
+        <div class="nm">${resp?resp.nome:'—'}</div>
+        <div class="reg">${resp?`${resp.tipoRegistro} ${resp.numeroRegistro}${resp.ufConselho?' — '+resp.ufConselho:''}`:'—'}</div>
+        <div class="reg">ART/TRT: ${esc(r.artTrt)||'—'}</div>
+      </div>
+
+      <div class="doc-section-title">Diretrizes Operacionais e de Aplicação</div>
+      ${diretrizesGuideBlockHtml(DB.diretrizes)}
+      ${diretrizesConfBlockHtml(DB.diretrizes)}
+
+      <div class="foot">Documento de uso técnico da Consultoria Dronefy-MAPCANA · Emitido via Prescreve Agro.</div>
+    </div>
+    <div class="modal-actions no-print">
+      <button class="btn btn-ghost" onclick="closeForm()">Fechar</button>
+      <button class="btn btn-ghost" onclick="setModule('diretrizes'); closeForm();">Editar diretrizes</button>
+      <button class="btn btn-gold" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('open');
+}
+
+/* ===================== INIT ===================== */
+(async function init(){
+  await loadAll();
+  document.getElementById('loginScreen').style.display = 'flex';
+})();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
