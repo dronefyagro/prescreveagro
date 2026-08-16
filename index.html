@@ -341,6 +341,13 @@ function esc(s){
   if(s===null||s===undefined) return "";
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Hash de senha (SHA-256 via Web Crypto). Não é tão forte quanto bcrypt com salt,
+// mas garante que a senha nunca fica gravada em texto puro na planilha compartilhada.
+async function hashPassword(pw){
+  const enc = new TextEncoder().encode(pw);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 
 async function loadAll(){
   let hadError = false;
@@ -359,7 +366,7 @@ async function loadAll(){
     }
   }
   if(!DB.usuarios || DB.usuarios.length===0){
-    DB.usuarios = [{id:uid(), ...DEFAULT_ADMIN_USER}];
+    DB.usuarios = [{id:uid(), nome:DEFAULT_ADMIN_USER.nome, usuario:DEFAULT_ADMIN_USER.usuario, papel:DEFAULT_ADMIN_USER.papel, ativo:DEFAULT_ADMIN_USER.ativo, senhaHash: await hashPassword(DEFAULT_ADMIN_USER.senha)}];
     await persist("usuarios");
   }
   return hadError;
@@ -399,11 +406,28 @@ async function apiSet_(key, value){
 }
 
 /* ===================== AUTH ===================== */
-function tryLogin(){
+async function tryLogin(){
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
-  const match = DB.usuarios.find(x=>x.usuario===u && x.senha===p && x.ativo!=="Inativo");
   const err = document.getElementById('loginError');
+  let match = null;
+
+  const candidate = DB.usuarios.find(x=>x.usuario===u && x.ativo!=="Inativo");
+  if(candidate){
+    if(candidate.senhaHash){
+      const hash = await hashPassword(p);
+      if(hash===candidate.senhaHash) match = candidate;
+    } else if(candidate.senha!==undefined){
+      // Conta antiga com senha em texto puro — migra para hash automaticamente no primeiro login certo.
+      if(candidate.senha===p){
+        match = candidate;
+        candidate.senhaHash = await hashPassword(p);
+        delete candidate.senha;
+        await persist("usuarios");
+      }
+    }
+  }
+
   if(!match){
     err.classList.add('show');
     return;
@@ -588,7 +612,7 @@ const FORMS = {
     fields:[
       {k:"nome",label:"Nome completo",type:"text",req:true,span2:true},
       {k:"usuario",label:"Usuário (login)",type:"text",req:true},
-      {k:"senha",label:"Senha",type:"password",req:true},
+      {k:"senha",label:"Senha (deixe em branco para manter a atual, se estiver editando)",type:"password",req:true},
       {k:"papel",label:"Papel",type:"selectstatic",options:["Administrador","Técnico"],req:true},
       {k:"responsavelId",label:"Vincular a responsável técnico",type:"select",source:"responsaveis"},
       {k:"ativo",label:"Status",type:"selectstatic",options:["Ativo","Inativo"],req:true},
@@ -727,6 +751,9 @@ async function saveRecord(moduleKey){
       if(f.type==="number") value = value===""? null : parseFloat(value);
       if(f.round2 && value!==null) value = Math.round(value*100)/100;
     }
+    if(moduleKey==="usuarios" && f.k==="senha" && editingId && value===""){
+      return; // editando e deixou em branco = mantém a senha atual, não mexe nisso
+    }
     if(f.req && (value===""||value===null||value===undefined)) missing.push(f.label);
     record[f.k] = value;
   });
@@ -734,6 +761,19 @@ async function saveRecord(moduleKey){
   if(missing.length){
     showToast(`Preencha: ${missing.join(', ')}`);
     return;
+  }
+
+  if(moduleKey==="usuarios"){
+    const loginNormalizado = (record.usuario||"").trim().toLowerCase();
+    const duplicado = DB.usuarios.some(u => u.id!==record.id && (u.usuario||"").trim().toLowerCase()===loginNormalizado);
+    if(duplicado){
+      showToast(`Já existe um usuário com o login "${record.usuario}". Escolha outro nome de acesso.`);
+      return;
+    }
+    if(record.senha){
+      record.senhaHash = await hashPassword(record.senha);
+      delete record.senha;
+    }
   }
 
   if(editingId){
@@ -941,6 +981,7 @@ function renderReceituarioPage(){
                   <div class="rowactions">
                     <button class="btn btn-gold btn-sm" onclick="openPrintView('${r.id}')">Ver/Imprimir</button>
                     <button class="btn btn-ghost btn-sm" onclick="openReceituarioForm('${r.id}')">Editar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="openHistoricoView('${r.id}')">Histórico</button>
                     <button class="btn btn-danger btn-sm" onclick="deleteRecord('receituarios','${r.id}')">Excluir</button>
                   </div>
                 </td>
@@ -1391,6 +1432,14 @@ async function saveReceituario(){
   recForm.custoHaParcial = faltaPreco;
   recForm.custoUnidadeIncerta = unidadeIncerta;
 
+  if(!recForm.historico) recForm.historico = [];
+  recForm.historico.push({
+    usuario: currentUser ? currentUser.nome : 'desconhecido',
+    papel: currentUser ? currentUser.papel : '',
+    acao: editingId ? 'Editado' : 'Criado',
+    timestamp: new Date().toISOString()
+  });
+
   if(editingId){
     const idx = DB.receituarios.findIndex(r=>r.id===editingId);
     recForm.id = editingId;
@@ -1502,6 +1551,27 @@ function resetDiretrizes(){
 }
 
 /* ===================== PRINT VIEW ===================== */
+function openHistoricoView(id){
+  const r = DB.receituarios.find(x=>x.id===id);
+  if(!r) return;
+  const hist = r.historico || [];
+  document.getElementById('modalBody').className = 'modal';
+  document.getElementById('modalBody').innerHTML = `
+    <h2>Histórico — ${esc(r.numero)}</h2>
+    <div class="msub">Registro de criação e edições deste receituário.</div>
+    ${hist.length===0 ? `<div class="checkempty">Sem histórico registrado (receituário criado antes desse recurso).</div>` : `
+      <div class="tablewrap"><table>
+        <thead><tr><th>Ação</th><th>Usuário</th><th>Papel</th><th>Quando</th></tr></thead>
+        <tbody>
+          ${hist.slice().reverse().map(h=>`<tr><td>${esc(h.acao)}</td><td>${esc(h.usuario)}</td><td>${esc(h.papel)}</td><td>${new Date(h.timestamp).toLocaleString('pt-BR')}</td></tr>`).join('')}
+        </tbody>
+      </table></div>
+    `}
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeForm()">Fechar</button></div>
+  `;
+  document.getElementById('overlay').classList.add('open');
+}
+
 function openPrintView(id){
   const r = DB.receituarios.find(x=>x.id===id);
   if(!r) return;
