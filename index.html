@@ -292,7 +292,7 @@ tbody tr:hover{background:#F7F6EC;}
   </div>
 </div>
 
-<div class="overlay no-print" id="overlay">
+<div class="overlay" id="overlay">
   <div class="modal" id="modalBody"></div>
 </div>
 
@@ -1210,6 +1210,9 @@ function openPrintView(id){
         <div class="row"><span>Área total tratada</span><b>${totalHa?totalHa+' ha':'—'}</b></div>
         <div class="row"><span>Praga / doença-alvo</span><b>${esc(r.pragaAlvo)||'—'}</b></div>
         <div class="row"><span>Cultura</span><b>${esc(talhoesInfo[0]?.cultura)||'Cana-de-açúcar'}</b></div>
+        <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
+        <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
+        <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
       </div>
 
       <div class="doc-section-title">Produtos recomendados — manejo de pragas e doenças</div>
