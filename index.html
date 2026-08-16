@@ -253,6 +253,7 @@ tbody tr:hover{background:#F7F6EC;}
       <div class="mark">Prescreve Agro</div>
     </div>
     <div class="tag">Acesso restrito</div>
+    <div class="login-error" id="loginConnWarning" style="display:none;"></div>
     <div class="login-error" id="loginError">Usuário ou senha inválidos.</div>
     <div class="f"><label>Usuário</label><input type="text" id="loginUser" autocomplete="username"></div>
     <div class="f"><label>Senha</label><input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter') tryLogin();"></div>
@@ -340,6 +341,7 @@ function esc(s){
 }
 
 async function loadAll(){
+  let hadError = false;
   for(const key of Object.keys(MODULES)){
     if(MODULES[key].virtual) continue;
     const isSingleton = MODULES[key].singleton;
@@ -348,6 +350,7 @@ async function loadAll(){
       DB[key] = res && res.value ? JSON.parse(res.value) : (isSingleton ? null : []);
     }catch(e){
       DB[key] = isSingleton ? null : [];
+      hadError = true;
     }
     if(isSingleton && !DB[key]){
       DB[key] = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
@@ -357,6 +360,7 @@ async function loadAll(){
     DB.usuarios = [{id:uid(), ...DEFAULT_ADMIN_USER}];
     await persist("usuarios");
   }
+  return hadError;
 }
 async function persist(key){
   try{
@@ -665,7 +669,7 @@ function openForm(moduleKey, id){
     const val = record[f.k] ?? "";
     const spanClass = f.span2 ? "f span2" : "f";
     if(f.type==="select"){
-      const opts = DB[f.source].map(o=>`<option value="${o.id}" ${val===o.id?'selected':''}>${o.nome}</option>`).join('');
+      const opts = DB[f.source].map(o=>`<option value="${o.id}" ${val===o.id?'selected':''}>${esc(o.nome)}</option>`).join('');
       return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
         <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
     }
@@ -754,7 +758,7 @@ function findDependents(moduleKey, id){
   for(const rule of rules){
     let count;
     if(rule.isArrayField) count = DB[rule.key].filter(r=>(r[rule.field]||[]).includes(id)).length;
-    else if(rule.isProductList) count = DB[rule.key].filter(r=>(r.produtos||[]).some(p=>p.produtoId===id)).length;
+    else if(rule.isProductList) count = DB[rule.key].filter(r=>(r.produtos||[]).some(p=>p.produtoId===id) || (r.herbicidas||[]).some(p=>p.produtoId===id)).length;
     else count = DB[rule.key].filter(r=>r[rule.field]===id).length;
     if(count>0) return {count, label:rule.label};
   }
@@ -803,13 +807,15 @@ function renderAdminDashboard(){
   ];
   const recentes = DB.receituarios.slice(-5).reverse();
 
-  // Controle de ART/TRT: agrupa receituários por número informado
+  // Controle de ART/TRT: agrupa receituários por número informado (mesma normalização usada no formulário/limite)
   const artTrtMap = {};
   DB.receituarios.forEach(r=>{
-    const key = (r.artTrt||"—").trim();
-    artTrtMap[key] = (artTrtMap[key]||0) + 1;
+    const raw = (r.artTrt||"—").trim();
+    const key = raw.toLowerCase();
+    if(!artTrtMap[key]) artTrtMap[key] = { label: raw, count: 0 };
+    artTrtMap[key].count += 1;
   });
-  const artTrtRows = Object.entries(artTrtMap).sort((a,b)=>b[1]-a[1]);
+  const artTrtRows = Object.values(artTrtMap).sort((a,b)=>b.count-a.count);
 
   document.getElementById('pageContent').innerHTML = `
     <div class="pagehead">
@@ -832,13 +838,13 @@ function renderAdminDashboard(){
         <table>
           <thead><tr><th>ART/TRT</th><th>Receituários emitidos</th><th>Status</th></tr></thead>
           <tbody>
-            ${artTrtRows.map(([artTrt,count])=>{
+            ${artTrtRows.map(({label,count})=>{
               let status, color;
               if(count >= ART_TRT_LIMITE){ status="Limite atingido"; color="var(--rust)"; }
               else if(count >= ART_TRT_LIMITE-5){ status="Atenção — próximo do limite"; color="var(--amber)"; }
               else { status="Regular"; color="var(--green)"; }
               return `<tr>
-                <td class="mono">${esc(artTrt)}</td>
+                <td class="mono">${esc(label)}</td>
                 <td class="mono">${count} / ${ART_TRT_LIMITE}</td>
                 <td style="color:${color};font-weight:600;">${status}</td>
               </tr>`;
@@ -903,7 +909,7 @@ function renderReceituarioPage(){
                 <td class="mono">${r.codigoRastreio||'—'}</td>
                 <td>${f?clienteLabel(f.clienteId):"—"}</td>
                 <td>${f?f.nome:"—"}</td>
-                <td>${r.talhaoIds.map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${t.codigo}</span>`:"";}).join('')}</td>
+                <td>${r.talhaoIds.map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${esc(t.codigo)}</span>`:"";}).join('')}</td>
                 <td>${respLabel(r.responsavelId)}</td>
                 <td class="mono">${r.artTrt||'—'}</td>
                 <td class="mono">${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+(r.custoHaParcial?' *':''):'—'}</td>
@@ -932,6 +938,7 @@ function renderReceituarioPage(){
       <button class="btn btn-primary" onclick="openReceituarioForm()">+ Novo Receituário</button>
     </div>
     ${tableHtml}
+    ${rows.some(r=>r.custoHaParcial) ? `<div class="subtle" style="margin-top:8px;">* Custo/ha parcial — um ou mais produtos desse receituário estão sem preço cadastrado ou com dose não reconhecida.</div>` : ''}
   `;
 }
 
@@ -964,7 +971,7 @@ function openReceituarioForm(id){
         <label>Fazenda <span class="req">*</span></label>
         <select id="rec_fazendaId" onchange="onRecFazendaChange(this.value)">
           <option value="">Selecione…</option>
-          ${DB.fazendas.map(f=>`<option value="${f.id}" ${recForm.fazendaId===f.id?'selected':''}>${f.nome}</option>`).join('')}
+          ${DB.fazendas.map(f=>`<option value="${f.id}" ${recForm.fazendaId===f.id?'selected':''}>${esc(f.nome)}</option>`).join('')}
         </select>
       </div>
       <div class="f">
@@ -975,7 +982,7 @@ function openReceituarioForm(id){
         <label>Responsável técnico (emitente) <span class="req">*</span></label>
         <select id="rec_responsavelId">
           <option value="">Selecione…</option>
-          ${DB.responsaveis.map(r=>`<option value="${r.id}" ${recForm.responsavelId===r.id?'selected':''}>${r.nome} — ${r.tipoRegistro} ${r.numeroRegistro}</option>`).join('')}
+          ${DB.responsaveis.map(r=>`<option value="${r.id}" ${recForm.responsavelId===r.id?'selected':''}>${esc(r.nome)} — ${esc(r.tipoRegistro)} ${esc(r.numeroRegistro)}</option>`).join('')}
         </select>
       </div>
       <div class="f">
@@ -1446,8 +1453,8 @@ function openPrintView(id){
 
       <div class="signature">
         <div class="line"></div>
-        <div class="nm">${resp?resp.nome:'—'}</div>
-        <div class="reg">${resp?`${resp.tipoRegistro} ${resp.numeroRegistro}${resp.ufConselho?' — '+resp.ufConselho:''}`:'—'}</div>
+        <div class="nm">${resp?esc(resp.nome):'—'}</div>
+        <div class="reg">${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}${resp.ufConselho?' — '+esc(resp.ufConselho):''}`:'—'}</div>
         <div class="reg">ART/TRT: ${esc(r.artTrt)||'—'}</div>
       </div>
 
@@ -1470,8 +1477,14 @@ function openPrintView(id){
 
 /* ===================== INIT ===================== */
 (async function init(){
-  await loadAll();
+  const hadError = await loadAll();
   document.getElementById('loginScreen').style.display = 'flex';
+  if(hadError){
+    const warn = document.getElementById('loginConnWarning');
+    warn.textContent = "⚠ Não foi possível carregar os dados da planilha agora (falha de conexão). Você pode entrar, mas alguns cadastros podem aparecer vazios até a conexão voltar.";
+    warn.style.color = "var(--amber)";
+    warn.style.display = "block";
+  }
 })();
 
 if("serviceWorker" in navigator){
