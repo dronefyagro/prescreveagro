@@ -1027,6 +1027,7 @@ function onRecFazendaChange(fazendaId){
   recForm.talhaoIds = [];
   document.getElementById('rec_clienteDisplay').value = fazendaId ? clienteLabel(fazenda(fazendaId)?.clienteId) : '—';
   renderTalhaoChecklist();
+  updateCustoPreview();
 }
 function renderTalhaoChecklist(){
   const list = document.getElementById('rec_talhoesList');
@@ -1049,6 +1050,7 @@ function renderTalhaoChecklist(){
 function toggleTalhao(id, checked){
   if(checked) recForm.talhaoIds.push(id);
   else recForm.talhaoIds = recForm.talhaoIds.filter(x=>x!==id);
+  updateCustoPreview();
 }
 
 function classFilterFor(listKey){
@@ -1148,8 +1150,16 @@ function updateCustoPreview(){
     el.innerHTML = `<b>Custo estimado do manejo:</b> selecione produtos para calcular.`;
     return;
   }
-  el.innerHTML = `<b>Custo estimado do manejo:</b> ${fmtBRL(total)}/ha` +
-    (faltaPreco ? ` <span style="color:var(--amber);">— um ou mais produtos sem preço ou dose numérica reconhecida; valor parcial.</span>` : ``);
+
+  const hectaresSelecionados = DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
+  const f = recForm.fazendaId ? fazenda(recForm.fazendaId) : null;
+  const areaFazenda = f ? (parseFloat(f.areaTotalHa)||0) : 0;
+
+  let html = `<b>Custo estimado do manejo:</b> ${fmtBRL(total)}/ha`;
+  if(hectaresSelecionados>0) html += `<br><b>Custo total — talhões selecionados (${hectaresSelecionados} ha):</b> ${fmtBRL(total*hectaresSelecionados)}`;
+  if(areaFazenda>0) html += `<br><b>Custo total — área total da fazenda (${areaFazenda} ha):</b> ${fmtBRL(total*areaFazenda)}`;
+  if(faltaPreco) html += ` <span style="color:var(--amber);">— um ou mais produtos sem preço ou dose numérica reconhecida; valor parcial.</span>`;
+  el.innerHTML = html;
 }
 
 async function saveReceituario(){
@@ -1191,6 +1201,9 @@ async function saveReceituario(){
   recForm.custoHaParcial = custoCalc.faltaPreco || custoCalcHerb.faltaPreco;
   const hectaresSelecionados = DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
   recForm.custoTotalCalculado = recForm.custoHaCalculado * hectaresSelecionados;
+  const fazendaAtual = fazenda(recForm.fazendaId);
+  const areaTotalFazenda = fazendaAtual ? (parseFloat(fazendaAtual.areaTotalHa)||0) : 0;
+  recForm.custoTotalFazenda = recForm.custoHaCalculado * areaTotalFazenda;
 
   if(editingId){
     const idx = DB.receituarios.findIndex(r=>r.id===editingId);
@@ -1347,7 +1360,8 @@ function openPrintView(id){
         <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
         <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
         <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':''):'—'}</b></div>
-        <div class="row"><span>Custo total estimado</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado):'—'}</b></div>
+        <div class="row"><span>Custo total — talhões tratados</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado):'—'}</b></div>
+        <div class="row"><span>Custo total — área total da fazenda</span><b>${r.custoTotalFazenda?fmtBRL(r.custoTotalFazenda):'—'}</b></div>
       </div>
 
       <div class="doc-section-title">Produtos recomendados — manejo de pragas e doenças</div>
