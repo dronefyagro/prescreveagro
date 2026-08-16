@@ -760,7 +760,10 @@ function findDependents(moduleKey, id){
   for(const rule of rules){
     let count;
     if(rule.isArrayField) count = DB[rule.key].filter(r=>(r[rule.field]||[]).includes(id)).length;
-    else if(rule.isProductList) count = DB[rule.key].filter(r=>(r.produtos||[]).some(p=>p.produtoId===id) || (r.herbicidas||[]).some(p=>p.produtoId===id)).length;
+    else if(rule.isProductList) count = DB[rule.key].filter(r=>{
+      const porFaz = getPorFazendaMap(r);
+      return Object.values(porFaz).some(b=>(b.produtos||[]).some(p=>p.produtoId===id) || (b.herbicidas||[]).some(p=>p.produtoId===id));
+    }).length;
     else if(rule.isFazendaList) count = DB[rule.key].filter(r=>(r.fazendaIds||(r.fazendaId?[r.fazendaId]:[])).includes(id)).length;
     else count = DB[rule.key].filter(r=>r[rule.field]===id).length;
     if(count>0) return {count, label:rule.label};
@@ -891,7 +894,7 @@ function renderAdminDashboard(){
 }
 
 /* ===================== RECEITUÁRIO AGRONÔMICO (custom module) ===================== */
-let recForm = { clienteId:"", fazendaIds:[], talhaoIds:[], responsavelId:"", dataEmissao:"", validade:"", pragaAlvo:"", recomendacoes:"", produtos:[], herbicidas:[] };
+let recForm = { clienteId:"", fazendaIds:[], talhaoIds:[], responsavelId:"", dataEmissao:"", validade:"", recomendacoes:"", porFazenda:{} };
 
 function receituarioFazendasLabel(r){
   const ids = r.fazendaIds || (r.fazendaId ? [r.fazendaId] : []);
@@ -903,6 +906,13 @@ function receituarioClienteId(r){
   const f = ids[0] ? fazenda(ids[0]) : null;
   return f ? f.clienteId : null;
 }
+// Normaliza receituários antigos (1 fazenda, produtos/pragaAlvo no nível raiz) para o formato por fazenda.
+function getPorFazendaMap(r){
+  if(r.porFazenda) return r.porFazenda;
+  const fid = (r.fazendaIds && r.fazendaIds[0]) || r.fazendaId;
+  if(!fid) return {};
+  return { [fid]: { pragaAlvo: r.pragaAlvo||"", produtos: r.produtos||[], herbicidas: r.herbicidas||[] } };
+}
 
 function renderReceituarioPage(){
   const rows = DB.receituarios;
@@ -913,7 +923,7 @@ function renderReceituarioPage(){
     tableHtml = `
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Cliente</th><th>Fazendas</th><th>Talhões</th><th>Emitente</th><th>ART/TRT</th><th>Custo/ha</th><th>Emissão</th><th style="width:190px;">Ações</th></tr></thead>
+          <thead><tr><th>Número</th><th>Código de rastreio</th><th>Cliente</th><th>Fazendas</th><th>Talhões</th><th>Emitente</th><th>ART/TRT</th><th>Custo total</th><th>Emissão</th><th style="width:190px;">Ações</th></tr></thead>
           <tbody>
             ${rows.slice().reverse().map(r=>{
               const cId = receituarioClienteId(r);
@@ -925,7 +935,7 @@ function renderReceituarioPage(){
                 <td>${r.talhaoIds.map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${esc(t.codigo)}</span>`:"";}).join('')}</td>
                 <td>${respLabel(r.responsavelId)}</td>
                 <td class="mono">${r.artTrt||'—'}</td>
-                <td class="mono">${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+(r.custoHaParcial?' *':''):'—'}</td>
+                <td class="mono">${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado)+(r.custoHaParcial?' *':''):'—'}</td>
                 <td>${fmtDate(r.dataEmissao)}</td>
                 <td>
                   <div class="rowactions">
@@ -951,7 +961,7 @@ function renderReceituarioPage(){
       <button class="btn btn-primary" onclick="openReceituarioForm()">+ Novo Receituário</button>
     </div>
     ${tableHtml}
-    ${rows.some(r=>r.custoHaParcial) ? `<div class="subtle" style="margin-top:8px;">* Custo/ha parcial — um ou mais produtos desse receituário estão sem preço cadastrado ou com dose não reconhecida.</div>` : ''}
+    ${rows.some(r=>r.custoHaParcial) ? `<div class="subtle" style="margin-top:8px;">* Custo parcial — um ou mais produtos desse receituário estão sem preço cadastrado ou com dose não reconhecida.</div>` : ''}
   `;
 }
 
@@ -970,21 +980,25 @@ function openReceituarioForm(id){
 
   recForm = record ? JSON.parse(JSON.stringify(record)) : {
     clienteId:"", fazendaIds:[], talhaoIds:[], responsavelId:"", artTrt:"", dataEmissao: new Date().toISOString().slice(0,10),
-    validade:"", pragaAlvo:"", recomendacoes:"", produtos:[{produtoId:"",dose:"",obs:""}]
+    validade:"", recomendacoes:"", porFazenda:{}
   };
-  // Compatibilidade com receituários antigos (1 fazenda só, sem clienteId próprio)
+  // Compatibilidade com receituários antigos (1 fazenda, produtos/praga no nível raiz)
   if(!recForm.fazendaIds) recForm.fazendaIds = recForm.fazendaId ? [recForm.fazendaId] : [];
   if(!recForm.clienteId){
     const f0 = recForm.fazendaIds[0] ? fazenda(recForm.fazendaIds[0]) : null;
     recForm.clienteId = f0 ? f0.clienteId : "";
   }
-  if(!recForm.produtos || recForm.produtos.length===0) recForm.produtos = [{produtoId:"",dose:"",obs:""}];
-  if(!recForm.herbicidas || recForm.herbicidas.length===0) recForm.herbicidas = [{produtoId:"",dose:"",obs:""}];
+  if(!recForm.porFazenda) recForm.porFazenda = getPorFazendaMap(record || {});
+  recForm.fazendaIds.forEach(fid=>{
+    if(!recForm.porFazenda[fid]) recForm.porFazenda[fid] = {pragaAlvo:"",produtos:[{produtoId:"",dose:"",obs:""}],herbicidas:[{produtoId:"",dose:"",obs:""}]};
+    if(!recForm.porFazenda[fid].produtos || recForm.porFazenda[fid].produtos.length===0) recForm.porFazenda[fid].produtos=[{produtoId:"",dose:"",obs:""}];
+    if(!recForm.porFazenda[fid].herbicidas || recForm.porFazenda[fid].herbicidas.length===0) recForm.porFazenda[fid].herbicidas=[{produtoId:"",dose:"",obs:""}];
+  });
 
   document.getElementById('modalBody').className = 'modal wide';
   document.getElementById('modalBody').innerHTML = `
     <h2>${editingId?'Editar':'Novo'} Receituário Agronômico</h2>
-    <div class="msub">Escolha o cliente, marque uma ou mais fazendas dele e depois os talhões alvo — inclusive de fazendas diferentes no mesmo receituário.</div>
+    <div class="msub">Escolha o cliente, marque uma ou mais fazendas dele, os talhões alvo, e defina a praga-alvo e os produtos de cada fazenda separadamente.</div>
     <div class="formgrid" id="recFormTop">
       <div class="f span2">
         <label>Cliente <span class="req">*</span></label>
@@ -1021,20 +1035,9 @@ function openReceituarioForm(id){
         <label>Validade</label>
         <input type="date" id="rec_validade" value="${recForm.validade}">
       </div>
-      <div class="f span2">
-        <label>Praga / doença-alvo</label>
-        <input type="text" id="rec_pragaAlvo" value="${esc(recForm.pragaAlvo)}" placeholder="ex: Complexo cigarrinhas, Broca Gigante...">
-      </div>
     </div>
 
-    <div class="doc-section-title" style="margin-top:20px;">Produtos recomendados — manejo de pragas e doenças</div>
-    <div id="rec_produtosList"></div>
-    <button type="button" class="addrow-btn" onclick="addProdRow('produtos')">+ Adicionar produto</button>
-
-    <div class="doc-section-title" style="margin-top:20px;">Herbicidas recomendados</div>
-    <div class="subtle" style="margin-bottom:8px;">Opcional. As diretrizes operacionais recomendam aplicação em tanque separado — verificar compatibilidade antes de misturar.</div>
-    <div id="rec_herbicidasList"></div>
-    <button type="button" class="addrow-btn" onclick="addProdRow('herbicidas')">+ Adicionar herbicida</button>
+    <div id="rec_fazendasBlocos" style="margin-top:16px;"></div>
 
     <div id="rec_custoPreview" class="obs-block" style="margin-top:16px;font-size:12.5px;"></div>
 
@@ -1050,8 +1053,7 @@ function openReceituarioForm(id){
   `;
   renderFazendaChecklist();
   renderTalhaoChecklist();
-  renderProdRows('produtos');
-  renderProdRows('herbicidas');
+  renderFazendaBlocos();
   updateArtTrtStatus();
   document.getElementById('overlay').classList.add('open');
 }
@@ -1062,6 +1064,7 @@ function onRecClienteChange(clienteId){
   recForm.talhaoIds = [];
   renderFazendaChecklist();
   renderTalhaoChecklist();
+  renderFazendaBlocos();
   updateCustoPreview();
 }
 function renderFazendaChecklist(){
@@ -1083,16 +1086,19 @@ function renderFazendaChecklist(){
   `).join('');
 }
 function toggleFazenda(id, checked){
-  if(checked) recForm.fazendaIds.push(id);
-  else{
+  if(checked){
+    recForm.fazendaIds.push(id);
+    if(!recForm.porFazenda[id]) recForm.porFazenda[id] = {pragaAlvo:"",produtos:[{produtoId:"",dose:"",obs:""}],herbicidas:[{produtoId:"",dose:"",obs:""}]};
+  } else {
     recForm.fazendaIds = recForm.fazendaIds.filter(x=>x!==id);
-    // remove talhões daquela fazenda que já estavam marcados
     recForm.talhaoIds = recForm.talhaoIds.filter(tid=>{
       const t = DB.talhoes.find(x=>x.id===tid);
       return t && t.fazendaId!==id;
     });
+    // Os produtos daquela fazenda ficam guardados em recForm.porFazenda caso ela seja remarcada.
   }
   renderTalhaoChecklist();
+  renderFazendaBlocos();
   updateCustoPreview();
 }
 function renderTalhaoChecklist(){
@@ -1122,42 +1128,77 @@ function toggleTalhao(id, checked){
   updateCustoPreview();
 }
 
+/* ---- Blocos de produtos por fazenda (praga-alvo + produtos + herbicidas próprios) ---- */
+function renderFazendaBlocos(){
+  const wrap = document.getElementById('rec_fazendasBlocos');
+  if(!wrap) return;
+  if(recForm.fazendaIds.length===0){
+    wrap.innerHTML = `<div class="checkempty">Marque ao menos uma fazenda para definir a praga-alvo e os produtos dela.</div>`;
+    return;
+  }
+  wrap.innerHTML = recForm.fazendaIds.map(fid=>{
+    const f = fazenda(fid);
+    const bucket = recForm.porFazenda[fid];
+    return `
+      <div class="settings-card" style="margin-bottom:14px;">
+        <h3>${esc(f?f.nome:'Fazenda')}</h3>
+        <div class="f span2" style="margin-bottom:12px;">
+          <label>Praga / doença-alvo</label>
+          <input type="text" value="${esc(bucket.pragaAlvo)}" placeholder="ex: Complexo cigarrinhas, Broca Gigante..." oninput="updateFazendaPraga('${fid}', this.value)">
+        </div>
+        <div class="doc-section-title" style="margin-top:8px;">Produtos recomendados</div>
+        <div id="rec_produtosList_${fid}"></div>
+        <button type="button" class="addrow-btn" onclick="addProdRow('${fid}','produtos')">+ Adicionar produto</button>
+        <div class="doc-section-title" style="margin-top:14px;">Herbicidas <span class="subtle" style="text-transform:none;font-weight:400;">(opcional — aplicação em tanque separado)</span></div>
+        <div id="rec_herbicidasList_${fid}"></div>
+        <button type="button" class="addrow-btn" onclick="addProdRow('${fid}','herbicidas')">+ Adicionar herbicida</button>
+      </div>
+    `;
+  }).join('');
+  recForm.fazendaIds.forEach(fid=>{
+    renderProdRows(fid,'produtos');
+    renderProdRows(fid,'herbicidas');
+  });
+}
+function updateFazendaPraga(fazendaId, value){ recForm.porFazenda[fazendaId].pragaAlvo = value; }
 
 function classFilterFor(listKey){
   return listKey==='herbicidas' ? (c=>c==='Herbicida') : (c=>c!=='Herbicida');
 }
-function renderProdRows(listKey){
-  const wrap = document.getElementById(listKey==='herbicidas' ? 'rec_herbicidasList' : 'rec_produtosList');
+function renderProdRows(fazendaId, listKey){
+  const wrap = document.getElementById(`rec_${listKey}List_${fazendaId}`);
+  if(!wrap) return;
   const filter = classFilterFor(listKey);
   const options = DB.produtos.filter(p=>filter(p.classe));
-  wrap.innerHTML = recForm[listKey].map((row,idx)=>`
+  const rows = recForm.porFazenda[fazendaId][listKey];
+  wrap.innerHTML = rows.map((row,idx)=>`
     <div class="prodrow">
       <div class="f">
         <label>Produto</label>
-        <select onchange="updateProdRow('${listKey}',${idx},'produtoId',this.value)">
+        <select onchange="updateProdRow('${fazendaId}','${listKey}',${idx},'produtoId',this.value)">
           <option value="">Selecione…</option>
           ${options.map(p=>`<option value="${p.id}" ${row.produtoId===p.id?'selected':''}>${esc(p.nome)} (${esc(p.classe)})</option>`).join('')}
         </select>
       </div>
       <div class="f">
         <label>Dose aplicada</label>
-        <input type="text" value="${esc(row.dose)}" placeholder="ex: 1 L/ha" oninput="updateProdRow('${listKey}',${idx},'dose',this.value)">
+        <input type="text" value="${esc(row.dose)}" placeholder="ex: 1 L/ha" oninput="updateProdRow('${fazendaId}','${listKey}',${idx},'dose',this.value)">
       </div>
       <div class="f">
         <label>Observação</label>
-        <input type="text" value="${esc(row.obs)}" placeholder="opcional" oninput="updateProdRow('${listKey}',${idx},'obs',this.value)">
+        <input type="text" value="${esc(row.obs)}" placeholder="opcional" oninput="updateProdRow('${fazendaId}','${listKey}',${idx},'obs',this.value)">
       </div>
-      <button type="button" class="rmbtn" onclick="removeProdRow('${listKey}',${idx})" title="Remover">✕</button>
+      <button type="button" class="rmbtn" onclick="removeProdRow('${fazendaId}','${listKey}',${idx})" title="Remover">✕</button>
     </div>
   `).join('');
   updateCustoPreview();
 }
-function updateProdRow(listKey, idx, key, value){ recForm[listKey][idx][key] = value; updateCustoPreview(); }
-function addProdRow(listKey){ recForm[listKey].push({produtoId:"",dose:"",obs:""}); renderProdRows(listKey); }
-function removeProdRow(listKey, idx){
-  recForm[listKey].splice(idx,1);
-  if(recForm[listKey].length===0) recForm[listKey].push({produtoId:"",dose:"",obs:""});
-  renderProdRows(listKey);
+function updateProdRow(fazendaId, listKey, idx, key, value){ recForm.porFazenda[fazendaId][listKey][idx][key] = value; updateCustoPreview(); }
+function addProdRow(fazendaId, listKey){ recForm.porFazenda[fazendaId][listKey].push({produtoId:"",dose:"",obs:""}); renderProdRows(fazendaId, listKey); }
+function removeProdRow(fazendaId, listKey, idx){
+  recForm.porFazenda[fazendaId][listKey].splice(idx,1);
+  if(recForm.porFazenda[fazendaId][listKey].length===0) recForm.porFazenda[fazendaId][listKey].push({produtoId:"",dose:"",obs:""});
+  renderProdRows(fazendaId, listKey);
 }
 
 const ART_TRT_LIMITE = 50;
@@ -1241,26 +1282,53 @@ function calcCustoHa(listaProdutos){
   });
   return { total, faltaPreco, unidadeIncerta, temItem };
 }
+// Custo de UMA fazenda dentro do receituário: soma produtos+herbicidas daquela
+// fazenda (R$/ha) e multiplica pelos hectares dos talhões dela que estão marcados.
+function calcCustoFazenda(fazendaId){
+  const bucket = recForm.porFazenda[fazendaId] || {produtos:[],herbicidas:[]};
+  const c1 = calcCustoHa(bucket.produtos);
+  const c2 = calcCustoHa(bucket.herbicidas);
+  const custoHa = c1.total + c2.total;
+  const hectares = DB.talhoes.filter(t=>t.fazendaId===fazendaId && recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
+  return {
+    custoHa, hectares, custoTotal: custoHa*hectares,
+    faltaPreco: c1.faltaPreco||c2.faltaPreco,
+    unidadeIncerta: c1.unidadeIncerta||c2.unidadeIncerta,
+    temItem: c1.temItem||c2.temItem
+  };
+}
 function updateCustoPreview(){
   const el = document.getElementById('rec_custoPreview');
   if(!el) return;
-  const c1 = calcCustoHa(recForm.produtos);
-  const c2 = calcCustoHa(recForm.herbicidas);
-  const total = c1.total + c2.total;
-  const faltaPreco = c1.faltaPreco || c2.faltaPreco;
-  const unidadeIncerta = c1.unidadeIncerta || c2.unidadeIncerta;
-  const temItem = c1.temItem || c2.temItem;
-  if(!temItem){
-    el.innerHTML = `<b>Custo estimado do manejo:</b> selecione produtos para calcular.`;
+  if(recForm.fazendaIds.length===0){
+    el.innerHTML = `<b>Custo estimado:</b> marque as fazendas e produtos para calcular.`;
     return;
   }
-
-  const hectaresSelecionados = DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
-
-  let html = `<b>Custo estimado do manejo:</b> ${fmtBRL(total)}/ha`;
-  if(hectaresSelecionados>0) html += `<br><b>Custo total estimado — talhões tratados (${fmtHa(hectaresSelecionados)} ha):</b> ${fmtBRL(total*hectaresSelecionados)}`;
-  if(faltaPreco) html += `<br><span style="color:var(--amber);">⚠ um ou mais produtos sem preço cadastrado ou dose não reconhecida — valor parcial.</span>`;
-  if(unidadeIncerta) html += `<br><span style="color:var(--amber);">⚠ um ou mais produtos NÃO entraram nessa soma — não foi possível confirmar a conversão de unidade (dose × preço). Confira o campo "Unidade" em Produtos e ajuste a dose se necessário.</span>`;
+  let html = '';
+  let grandTotal = 0;
+  let anyItem = false;
+  let anyFalta = false, anyUnidade = false;
+  recForm.fazendaIds.forEach(fid=>{
+    const f = fazenda(fid);
+    const c = calcCustoFazenda(fid);
+    if(!c.temItem) return;
+    anyItem = true;
+    grandTotal += c.custoTotal;
+    if(c.faltaPreco) anyFalta = true;
+    if(c.unidadeIncerta) anyUnidade = true;
+    html += `<div style="margin-bottom:6px;"><b>${esc(f?f.nome:'Fazenda')}:</b> ${fmtBRL(c.custoHa)}/ha`;
+    if(c.hectares>0) html += ` · ${fmtHa(c.hectares)} ha tratados = ${fmtBRL(c.custoTotal)}`;
+    if(c.faltaPreco) html += ` <span style="color:var(--amber);">⚠ parcial</span>`;
+    if(c.unidadeIncerta) html += ` <span style="color:var(--amber);">⚠ conferir unidade</span>`;
+    html += `</div>`;
+  });
+  if(!anyItem){
+    el.innerHTML = `<b>Custo estimado:</b> selecione produtos em ao menos uma fazenda para calcular.`;
+    return;
+  }
+  html += `<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:8px;"><b>Custo total estimado do receituário:</b> ${fmtBRL(grandTotal)}</div>`;
+  if(anyFalta) html += `<div style="margin-top:4px;"><span style="color:var(--amber);">⚠ um ou mais produtos sem preço cadastrado ou dose não reconhecida — valor parcial.</span></div>`;
+  if(anyUnidade) html += `<div style="margin-top:4px;"><span style="color:var(--amber);">⚠ um ou mais produtos NÃO entraram na soma — não foi possível confirmar a conversão de unidade. Confira o campo "Unidade" em Produtos.</span></div>`;
   el.innerHTML = html;
 }
 
@@ -1270,10 +1338,7 @@ async function saveReceituario(){
   recForm.artTrt = document.getElementById('rec_artTrt').value;
   recForm.dataEmissao = document.getElementById('rec_dataEmissao').value;
   recForm.validade = document.getElementById('rec_validade').value;
-  recForm.pragaAlvo = document.getElementById('rec_pragaAlvo').value;
   recForm.recomendacoes = document.getElementById('rec_recomendacoes').value;
-  const produtosValidos = recForm.produtos.filter(p=>p.produtoId);
-  const herbicidasValidos = recForm.herbicidas.filter(p=>p.produtoId);
 
   let missing = [];
   if(!recForm.clienteId) missing.push("Cliente");
@@ -1282,7 +1347,14 @@ async function saveReceituario(){
   if(!recForm.artTrt) missing.push("Número da ART/TRT");
   if(!recForm.dataEmissao) missing.push("Data de emissão");
   if(recForm.talhaoIds.length===0) missing.push("Talhões alvo");
-  if(produtosValidos.length===0) missing.push("ao menos 1 produto");
+
+  const semProduto = [];
+  recForm.fazendaIds.forEach(fid=>{
+    const bucket = recForm.porFazenda[fid] || {produtos:[],herbicidas:[]};
+    const validos = [...(bucket.produtos||[]), ...(bucket.herbicidas||[])].filter(p=>p.produtoId);
+    if(validos.length===0){ const f=fazenda(fid); semProduto.push(f?f.nome:'fazenda selecionada'); }
+  });
+  if(semProduto.length) missing.push(`produto para: ${semProduto.join(', ')}`);
 
   if(missing.length){
     showToast(`Preencha: ${missing.join(', ')}`);
@@ -1295,17 +1367,29 @@ async function saveReceituario(){
     if(!seguir) return;
   }
 
-  recForm.produtos = produtosValidos;
-  recForm.herbicidas = herbicidasValidos;
-
-  const custoCalc = calcCustoHa(produtosValidos);
-  const custoCalcHerb = calcCustoHa(herbicidasValidos);
   const round2 = v => Math.round(v*100)/100;
-  recForm.custoHaCalculado = round2(custoCalc.total + custoCalcHerb.total);
-  recForm.custoHaParcial = custoCalc.faltaPreco || custoCalcHerb.faltaPreco;
-  recForm.custoUnidadeIncerta = custoCalc.unidadeIncerta || custoCalcHerb.unidadeIncerta;
-  const hectaresSelecionados = round2(DB.talhoes.filter(t=>recForm.talhaoIds.includes(t.id)).reduce((s,t)=>s+(parseFloat(t.hectares)||0),0));
-  recForm.custoTotalCalculado = round2(recForm.custoHaCalculado * hectaresSelecionados);
+  const cleanPorFazenda = {};
+  let custoTotalGeral = 0;
+  let hectaresTotal = 0;
+  let faltaPreco = false, unidadeIncerta = false;
+  recForm.fazendaIds.forEach(fid=>{
+    const bucket = recForm.porFazenda[fid] || {pragaAlvo:"",produtos:[],herbicidas:[]};
+    cleanPorFazenda[fid] = {
+      pragaAlvo: bucket.pragaAlvo||"",
+      produtos: (bucket.produtos||[]).filter(p=>p.produtoId),
+      herbicidas: (bucket.herbicidas||[]).filter(p=>p.produtoId)
+    };
+    const c = calcCustoFazenda(fid);
+    custoTotalGeral += c.custoTotal;
+    hectaresTotal += c.hectares;
+    if(c.faltaPreco) faltaPreco = true;
+    if(c.unidadeIncerta) unidadeIncerta = true;
+  });
+  recForm.porFazenda = cleanPorFazenda;
+  recForm.custoTotalCalculado = round2(custoTotalGeral);
+  recForm.custoHaCalculado = hectaresTotal>0 ? round2(custoTotalGeral/hectaresTotal) : 0;
+  recForm.custoHaParcial = faltaPreco;
+  recForm.custoUnidadeIncerta = unidadeIncerta;
 
   if(editingId){
     const idx = DB.receituarios.findIndex(r=>r.id===editingId);
@@ -1429,10 +1513,55 @@ function openPrintView(id){
   const resp = DB.responsaveis.find(x=>x.id===r.responsavelId);
   const talhoesInfo = r.talhaoIds.map(tid=>DB.talhoes.find(t=>t.id===tid)).filter(Boolean);
   const totalHa = talhoesInfo.reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
-  const talhoesPorFazenda = fazendasInfo.map(f=>{
-    const codigos = talhoesInfo.filter(t=>t.fazendaId===f.id).map(t=>t.codigo);
-    return codigos.length ? `${f.nome}: ${codigos.join(', ')}` : null;
-  }).filter(Boolean).join(' · ');
+  const porFazenda = getPorFazendaMap(r);
+
+  const blocosFazenda = fazendasInfo.map(f=>{
+    const bucket = porFazenda[f.id] || {pragaAlvo:"",produtos:[],herbicidas:[]};
+    const talhoesFazenda = talhoesInfo.filter(t=>t.fazendaId===f.id);
+    const haFazenda = talhoesFazenda.reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
+    const custoFazenda = calcCustoHa(bucket.produtos).total + calcCustoHa(bucket.herbicidas).total;
+    return `
+      <div class="doc-section-title" style="margin-top:22px;">${esc(f.nome)}</div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin:-6px 0 8px;">
+        Talhões: ${esc(talhoesFazenda.map(t=>t.codigo).join(', '))||'—'} (${fmtHa(haFazenda)} ha)
+        · Praga/doença-alvo: ${esc(bucket.pragaAlvo)||'—'}
+        ${custoFazenda>0?`· Custo: ${fmtBRL(custoFazenda)}/ha`:''}
+      </div>
+      <table>
+        <thead><tr><th>Produto</th><th>Classe</th><th>Princípio ativo</th><th>Dose aplicada</th><th>Observação</th></tr></thead>
+        <tbody>
+          ${(bucket.produtos||[]).map(p=>{
+            const prod = DB.produtos.find(x=>x.id===p.produtoId);
+            return `<tr>
+              <td>${prod?esc(prod.nome):'—'}</td>
+              <td>${prod?esc(prod.classe):'—'}</td>
+              <td>${esc(prod?.principioAtivo)||'—'}</td>
+              <td>${esc(p.dose)||'—'}</td>
+              <td>${esc(p.obs)||'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      ${(bucket.herbicidas && bucket.herbicidas.length>0) ? `
+        <div style="font-size:11.5px;font-weight:700;color:var(--herb);margin:8px 0 4px;">Herbicidas — ${esc(f.nome)}</div>
+        <table>
+          <thead><tr><th>Produto</th><th>Princípio ativo</th><th>Dose aplicada</th><th>Observação</th></tr></thead>
+          <tbody>
+            ${bucket.herbicidas.map(p=>{
+              const prod = DB.produtos.find(x=>x.id===p.produtoId);
+              return `<tr>
+                <td>${prod?esc(prod.nome):'—'}</td>
+                <td>${esc(prod?.principioAtivo)||'—'}</td>
+                <td>${esc(p.dose)||'—'}</td>
+                <td>${esc(p.obs)||'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <div class="obs-block" style="margin-top:-6px;font-size:11px;">⚠ Aplicar herbicida em tanque separado dos demais produtos dessa fazenda.</div>
+      ` : ''}
+    `;
+  }).join('');
 
   document.getElementById('modalBody').className = 'modal wide';
   document.getElementById('modalBody').innerHTML = `
@@ -1461,55 +1590,18 @@ function openPrintView(id){
         <div class="row"><span>Documento</span><b>${esc(c?.documento)||'—'}</b></div>
         <div class="row"><span>Fazendas</span><b>${esc(fazendasInfo.map(f=>f.nome).join(', '))||'—'}</b></div>
         <div class="row"><span>Local</span><b>${esc(locais.join(' · '))||'—'}</b></div>
-        <div class="row"><span>Talhões</span><b>${esc(talhoesPorFazenda)||'—'}</b></div>
         <div class="row"><span>Área total tratada</span><b>${totalHa?fmtHa(totalHa)+' ha':'—'}</b></div>
-        <div class="row"><span>Praga / doença-alvo</span><b>${esc(r.pragaAlvo)||'—'}</b></div>
         <div class="row"><span>Cultura</span><b>${esc(talhoesInfo[0]?.cultura)||'Cana-de-açúcar'}</b></div>
         <div class="row"><span>Responsável técnico</span><b>${resp?esc(resp.nome):'—'}</b></div>
         <div class="row"><span>Registro (CFTA/CREA)</span><b>${resp?`${esc(resp.tipoRegistro)} ${esc(resp.numeroRegistro)}`:'—'}</b></div>
         <div class="row"><span>ART/TRT</span><b>${esc(r.artTrt)||'—'}</b></div>
-        <div class="row"><span>Custo do manejo</span><b>${r.custoHaCalculado?fmtBRL(r.custoHaCalculado)+'/ha'+(r.custoHaParcial?' (parcial)':'')+(r.custoUnidadeIncerta?' (produto(s) não incluído(s) — conferir unidade)':''):'—'}</b></div>
-        <div class="row"><span>Custo total estimado — talhões tratados</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado):'—'}</b></div>
+        <div class="row"><span>Custo total estimado do receituário</span><b>${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado)+(r.custoHaParcial?' (parcial)':'')+(r.custoUnidadeIncerta?' (conferir unidade)':''):'—'}</b></div>
       </div>
 
-      <div class="doc-section-title">Produtos recomendados — manejo de pragas e doenças</div>
-      <table>
-        <thead><tr><th>Produto</th><th>Classe</th><th>Princípio ativo</th><th>Dose aplicada</th><th>Observação</th></tr></thead>
-        <tbody>
-          ${r.produtos.map(p=>{
-            const prod = DB.produtos.find(x=>x.id===p.produtoId);
-            return `<tr>
-              <td>${prod?esc(prod.nome):'—'}</td>
-              <td>${prod?esc(prod.classe):'—'}</td>
-              <td>${esc(prod?.principioAtivo)||'—'}</td>
-              <td>${esc(p.dose)||'—'}</td>
-              <td>${esc(p.obs)||'—'}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-
-      ${(r.herbicidas && r.herbicidas.length>0) ? `
-        <div class="doc-section-title">Herbicidas recomendados</div>
-        <table>
-          <thead><tr><th>Produto</th><th>Princípio ativo</th><th>Dose aplicada</th><th>Observação</th></tr></thead>
-          <tbody>
-            ${r.herbicidas.map(p=>{
-              const prod = DB.produtos.find(x=>x.id===p.produtoId);
-              return `<tr>
-                <td>${prod?esc(prod.nome):'—'}</td>
-                <td>${esc(prod?.principioAtivo)||'—'}</td>
-                <td>${esc(p.dose)||'—'}</td>
-                <td>${esc(p.obs)||'—'}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-        <div class="obs-block" style="margin-top:-6px;font-size:11.5px;">⚠ Aplicar herbicida em tanque separado dos demais produtos, conforme diretrizes de compatibilidade.</div>
-      ` : ''}
+      ${blocosFazenda}
 
       ${r.recomendacoes ? `
-        <div class="doc-section-title">Recomendações gerais</div>
+        <div class="doc-section-title" style="margin-top:22px;">Recomendações gerais</div>
         <div class="obs-block">${esc(r.recomendacoes).replace(/\n/g,'<br>')}</div>
       ` : ''}
 
