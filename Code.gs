@@ -34,6 +34,7 @@ function doPost(e) {
 
     return jsonResponse_({ok:false, error:"unknown_action"});
   } catch (err) {
+    if (err && err.name === "AuthError") return jsonResponse_({ok:false, error:"unauthorized"});
     console.error(err && err.stack ? err.stack : err);
     return jsonResponse_({ok:false, error:"server_error"});
   }
@@ -86,8 +87,11 @@ function logout_(body) {
   return jsonResponse_({ok:true});
 }
 
-function getValue_(body) {
+function getValue_(body, session) {
   const key = validateKey_(body.key);
+  if (key === "usuarios" && session.papel !== "Administrador") {
+    return jsonResponse_({ok:false, error:"forbidden"});
+  }
   const value = readRaw_(key);
   return jsonResponse_({ok:true, key:key, value:value || null, version:version_(value)});
 }
@@ -133,7 +137,9 @@ function requireSession_(token) {
   return JSON.parse(raw);
 }
 
-function AuthError_() {}
+function AuthError_() {
+  this.name = "AuthError";
+}
 AuthError_.prototype = Object.create(Error.prototype);
 
 function validateKey_(key) {
@@ -190,10 +196,6 @@ function safeKey_(value) {
 }
 
 function jsonResponse_(obj) {
-  if (obj && obj.error === "server_error" && arguments.callee.caller &&
-      arguments.callee.caller.name === "doPost") {
-    // Mantém detalhes internos fora da resposta pública.
-  }
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
