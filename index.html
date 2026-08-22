@@ -330,9 +330,11 @@ const DEFAULT_DIRETRIZES = {
   cuidados:"Informar antecipadamente qualquer substituição por produtos similares para validação de compatibilidade.\nNo uso de cortador de soqueira, verificar alinhamento dos discos e eventual entupimento de bicos.\nDirecionar o jato à base das touceiras, buscando aproximadamente 70% das plantas e 30% do solo.",
   confidencialidade:"Este documento é uso exclusivo da Consultoria Dronefy-MAPCANA, a divulgação, compartilhamento ou repasse de informações a Terceiros é estritamente proibida sem prévia comunicação e autorização expressa, exceto os produtos e suas dosagens.\nEssa política visa proteger os interesses da Dronefy enquanto Consultoria e garantir que nosso modelo de informações não sejam copiados para fins não relacionados ao Programa MAPCANA."
 };
-const DEFAULT_ADMIN_USER = {usuario:"admin", senha:"mapcana2026", nome:"Administrador", papel:"Administrador", ativo:"Ativo"};
 let DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
 let currentUser = null;
+let API_SESSION_TOKEN = "";
+const API_VERSIONS = {};
+const LOAD_ERRORS = new Set();
 let activeModule = "clientes";
 let editingId = null;
 
@@ -351,31 +353,41 @@ async function hashPassword(pw){
 
 async function loadAll(){
   let hadError = false;
+  LOAD_ERRORS.clear();
   for(const key of Object.keys(MODULES)){
     if(MODULES[key].virtual) continue;
+    if(MODULES[key].adminOnly && (!currentUser || currentUser.papel!=="Administrador")){
+      DB[key] = [];
+      continue;
+    }
     const isSingleton = MODULES[key].singleton;
     try{
       const res = await apiGet_(key);
       DB[key] = res && res.value ? JSON.parse(res.value) : (isSingleton ? null : []);
+      API_VERSIONS[key] = res.version;
     }catch(e){
       DB[key] = isSingleton ? null : [];
+      LOAD_ERRORS.add(key);
       hadError = true;
     }
-    if(isSingleton && !DB[key]){
-      DB[key] = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
-    }
-  }
-  if(!DB.usuarios || DB.usuarios.length===0){
-    DB.usuarios = [{id:uid(), nome:DEFAULT_ADMIN_USER.nome, usuario:DEFAULT_ADMIN_USER.usuario, papel:DEFAULT_ADMIN_USER.papel, ativo:DEFAULT_ADMIN_USER.ativo, senhaHash: await hashPassword(DEFAULT_ADMIN_USER.senha)}];
-    await persist("usuarios");
+    if(isSingleton && !DB[key]) DB[key] = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
   }
   return hadError;
 }
 async function persist(key){
+  if(LOAD_ERRORS.has(key)){
+    showToast("Este módulo não foi carregado. Atualize a página antes de salvar.");
+    throw new Error("module_not_loaded");
+  }
   try{
-    await apiSet_(key, JSON.stringify(DB[key]));
+    const res = await apiSet_(key, JSON.stringify(DB[key]), API_VERSIONS[key]);
+    API_VERSIONS[key] = res.version;
   }catch(e){
-    showToast("Falha ao salvar — verifique sua conexão e tente novamente.");
+    const msg = e.code==="conflict"
+      ? "Outro usuário alterou estes dados. Atualize a página e tente novamente."
+      : "Falha ao salvar — nenhuma confirmação foi registrada.";
+    showToast(msg);
+    throw e;
   }
 }
 
@@ -385,24 +397,29 @@ async function persist(key){
 const API_BASE_URL = "https://script.google.com/macros/s/AKfycbypIXUPSNCalPL00R1gz2_yzAHkgoXopcgw0T1jV6k1wUEKi_oLGCxOGKKru9QGtPXjqw/exec";
 
 let __localFallback = {};
-async function apiGet_(key){
-  if(!API_BASE_URL || API_BASE_URL.startsWith("COLE_AQUI")){
-    return { key, value: __localFallback[key] || null };
+async function apiRequest_(payload){
+  if(!API_BASE_URL || API_BASE_URL.startsWith("COLE_AQUI")) throw Object.assign(new Error("API não configurada"),{code:"api_not_configured"});
+  let res;
+  try{
+    res = await fetch(API_BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+  }catch(_){
+    throw Object.assign(new Error("Falha de conexão"),{code:"network_error"});
   }
-  const res = await fetch(`${API_BASE_URL}?key=${encodeURIComponent(key)}`);
-  return await res.json();
+  let data;
+  try{ data = await res.json(); }
+  catch(_){ throw Object.assign(new Error("Resposta inválida do servidor"),{code:"invalid_response"}); }
+  if(!data.ok) throw Object.assign(new Error(data.error||"api_error"),{code:data.error||"api_error",data});
+  return data;
 }
-async function apiSet_(key, value){
-  if(!API_BASE_URL || API_BASE_URL.startsWith("COLE_AQUI")){
-    __localFallback[key] = value;
-    return { key, value };
-  }
-  const res = await fetch(API_BASE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }, // evita preflight CORS no Apps Script
-    body: JSON.stringify({ key, value })
-  });
-  return await res.json();
+async function apiGet_(key){
+  return apiRequest_({action:"get", token:API_SESSION_TOKEN, key});
+}
+async function apiSet_(key, value, expectedVersion){
+  return apiRequest_({action:"set", token:API_SESSION_TOKEN, key, value, expectedVersion});
 }
 
 /* ===================== AUTH ===================== */
@@ -410,40 +427,36 @@ async function tryLogin(){
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
-  let match = null;
-
-  const candidate = DB.usuarios.find(x=>x.usuario===u && x.ativo!=="Inativo");
-  if(candidate){
-    if(candidate.senhaHash){
-      const hash = await hashPassword(p);
-      if(hash===candidate.senhaHash) match = candidate;
-    } else if(candidate.senha!==undefined){
-      // Conta antiga com senha em texto puro — migra para hash automaticamente no primeiro login certo.
-      if(candidate.senha===p){
-        match = candidate;
-        candidate.senhaHash = await hashPassword(p);
-        delete candidate.senha;
-        await persist("usuarios");
-      }
-    }
-  }
-
-  if(!match){
-    err.classList.add('show');
-    return;
-  }
   err.classList.remove('show');
-  currentUser = match;
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appRoot').style.display = 'flex';
-  document.getElementById('userboxName').textContent = currentUser.nome;
-  document.getElementById('userboxRole').textContent = currentUser.papel;
-  activeModule = "clientes";
-  renderNav();
-  renderPage();
+  try{
+    const auth = await apiRequest_({action:"login", username:u, password:p});
+    API_SESSION_TOKEN = auth.token;
+    currentUser = auth.user;
+    const hadError = await loadAll();
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'flex';
+    document.getElementById('userboxName').textContent = currentUser.nome;
+    document.getElementById('userboxRole').textContent = currentUser.papel;
+    activeModule = "clientes";
+    renderNav();
+    renderPage();
+    if(hadError) showToast("Alguns módulos não foram carregados e estão protegidos contra gravação.");
+  }catch(e){
+    const messages = {
+      invalid_credentials:"Usuário ou senha inválidos.",
+      too_many_attempts:"Muitas tentativas. Aguarde 10 minutos.",
+      network_error:"Sem conexão com o servidor.",
+      api_not_configured:"API ainda não configurada."
+    };
+    err.textContent = messages[e.code] || "Não foi possível entrar.";
+    err.classList.add('show');
+  }
 }
-function logout(){
+async function logout(){
+  if(API_SESSION_TOKEN) apiRequest_({action:"logout",token:API_SESSION_TOKEN}).catch(()=>{});
+  API_SESSION_TOKEN = "";
   currentUser = null;
+  DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginUser').value = '';
@@ -1700,15 +1713,8 @@ function openPrintView(id){
 }
 
 /* ===================== INIT ===================== */
-(async function init(){
-  const hadError = await loadAll();
+(function init(){
   document.getElementById('loginScreen').style.display = 'flex';
-  if(hadError){
-    const warn = document.getElementById('loginConnWarning');
-    warn.textContent = "⚠ Não foi possível carregar os dados da planilha agora (falha de conexão). Você pode entrar, mas alguns cadastros podem aparecer vazios até a conexão voltar.";
-    warn.style.color = "var(--amber)";
-    warn.style.display = "block";
-  }
 })();
 
 if("serviceWorker" in navigator){
