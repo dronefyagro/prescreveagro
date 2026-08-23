@@ -8,7 +8,7 @@
 
 const ALLOWED_KEYS = Object.freeze([
   "clientes", "fazendas", "talhoes", "produtos",
-  "responsaveis", "receituarios", "diretrizes", "usuarios"
+  "responsaveis", "pragasDoencas", "receituarios", "diretrizes", "usuarios"
 ]);
 const ADMIN_ONLY_WRITE_KEYS = Object.freeze(["usuarios"]);
 const SESSION_SECONDS = 21600;

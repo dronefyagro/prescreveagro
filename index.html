@@ -295,7 +295,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.1.0</footer>
+    <footer class="version-footer">Prescreve Agro · v1.2.0</footer>
   </div>
 </div>
 
@@ -309,7 +309,7 @@ tbody tr:hover{background:#F7F6EC;}
 /* ===================== STATE & STORAGE ===================== */
 const MODULE_GROUPS = [
   {label:"Base cadastral", keys:["clientes","fazendas","talhoes"]},
-  {label:"Catálogo", keys:["produtos","responsaveis"]},
+  {label:"Catálogo", keys:["produtos","pragasDoencas","responsaveis"]},
   {label:"Documentos", keys:["receituarios","diretrizes"]},
   {label:"Administração", keys:["admin","usuarios"], adminOnly:true},
 ];
@@ -318,6 +318,7 @@ const MODULES = {
   fazendas: {label:"Fazendas", icon:"🌾"},
   talhoes: {label:"Talhões", icon:"🗺️"},
   produtos: {label:"Produtos", icon:"🧪"},
+  pragasDoencas: {label:"Pragas e Doenças", icon:"🐛"},
   responsaveis: {label:"Responsáveis Técnicos", icon:"🪪"},
   receituarios: {label:"Receituário Agronômico", icon:"📋"},
   diretrizes: {label:"Diretrizes Operacionais", icon:"📐", singleton:true},
@@ -332,7 +333,22 @@ const DEFAULT_DIRETRIZES = {
   cuidados:"Informar antecipadamente qualquer substituição por produtos similares para validação de compatibilidade.\nNo uso de cortador de soqueira, verificar alinhamento dos discos e eventual entupimento de bicos.\nDirecionar o jato à base das touceiras, buscando aproximadamente 70% das plantas e 30% do solo.",
   confidencialidade:"Este documento é uso exclusivo da Consultoria Dronefy-MAPCANA, a divulgação, compartilhamento ou repasse de informações a Terceiros é estritamente proibida sem prévia comunicação e autorização expressa, exceto os produtos e suas dosagens.\nEssa política visa proteger os interesses da Dronefy enquanto Consultoria e garantir que nosso modelo de informações não sejam copiados para fins não relacionados ao Programa MAPCANA."
 };
-let DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
+const DEFAULT_PRAGAS_DOENCAS = [
+  {id:"PD-CANA-001",tipo:"Praga",nome:"Broca-da-cana",nomeCientifico:"Diatraea saccharalis",cicloVida:"Ovos originam lagartas que se alimentam das folhas e penetram no colmo, onde abrem galerias. A fase larval dura cerca de 40 dias, seguida de pupa por 9 a 14 dias. O ciclo completo dura aproximadamente 53 a 60 dias.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-002",tipo:"Praga",nome:"Cigarrinha-das-raízes",nomeCientifico:"Mahanarva fimbriolata",cicloVida:"Os ovos permanecem no solo ou na palhada, com parte deles em diapausa durante o período seco. Com as chuvas, surgem ninfas que vivem junto às raízes envoltas em espuma; depois emergem adultos, reiniciando o ciclo.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-003",tipo:"Praga",nome:"Bicudo-da-cana",nomeCientifico:"Sphenophorus levis",cicloVida:"Os adultos depositam ovos próximos à base da planta. As larvas penetram rizomas e a região subterrânea dos colmos, formam pupas no interior dos tecidos e originam novos adultos que permanecem principalmente no solo.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-004",tipo:"Praga",nome:"Migdolus",nomeCientifico:"Migdolus fryanus",cicloVida:"Os ovos são colocados no solo. As larvas vivem em profundidade e atacam o sistema radicular por período prolongado; depois passam pelas fases de pupa e adulto, geralmente ainda associadas ao ambiente subterrâneo.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-005",tipo:"Praga",nome:"Cupins subterrâneos",nomeCientifico:"Heterotermes tenuis e outros",cicloVida:"Vivem em colônias com reprodutores, operários e soldados. Os indivíduos alados formam novas colônias; operários atacam toletes, raízes e tecidos subterrâneos, mantendo ciclos contínuos enquanto houver alimento e condições favoráveis.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-006",tipo:"Praga",nome:"Lagarta-elasmo",nomeCientifico:"Elasmopalpus lignosellus",cicloVida:"As mariposas depositam ovos no solo ou em resíduos vegetais. As lagartas perfuram plântulas e perfilhos jovens, formam abrigo junto ao solo e depois empupam, dando origem a novos adultos.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-007",tipo:"Doença",nome:"Ferrugem-marrom",nomeCientifico:"Puccinia melanocephala",cicloVida:"O fungo produz urediniósporos nas lesões foliares. Os esporos são dispersos principalmente pelo vento, germinam em folhas úmidas e provocam sucessivos ciclos de infecção durante períodos favoráveis.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-008",tipo:"Doença",nome:"Ferrugem-alaranjada",nomeCientifico:"Puccinia kuehnii",cicloVida:"Urediniósporos produzidos nas pústulas são transportados pelo vento. Em condições de umidade e temperatura favoráveis, germinam nas folhas e geram novos ciclos de lesões e esporulação.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-009",tipo:"Doença",nome:"Carvão-da-cana",nomeCientifico:"Sporisorium scitamineum",cicloVida:"Teliósporos infectam gemas durante a brotação. O fungo coloniza a planta sistemicamente e forma o chicote característico, que libera grande quantidade de esporos capazes de alcançar novas gemas e mudas.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-010",tipo:"Doença",nome:"Mosaico-da-cana",nomeCientifico:"Sugarcane mosaic virus (SCMV)",cicloVida:"O vírus permanece em plantas e material de propagação infectados. É transmitido por mudas e por pulgões de maneira não persistente; após a infecção, multiplica-se sistemicamente nos tecidos da planta.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-011",tipo:"Doença",nome:"Escaldadura-das-folhas",nomeCientifico:"Xanthomonas albilineans",cicloVida:"A bactéria sobrevive em plantas e mudas infectadas, entra por ferimentos e coloniza os vasos. Dissemina-se principalmente por material de plantio e instrumentos de corte contaminados.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-012",tipo:"Doença",nome:"Raquitismo-da-soqueira",nomeCientifico:"Leifsonia xyli subsp. xyli",cicloVida:"A bactéria coloniza o xilema e permanece em colmos e mudas infectados. A disseminação ocorre principalmente pelo plantio de material contaminado e por ferramentas de corte; a infecção persiste nas soqueiras.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-013",tipo:"Doença",nome:"Podridão-abacaxi",nomeCientifico:"Ceratocystis paradoxa (Thielaviopsis paradoxa)",cicloVida:"O fungo sobrevive no solo e em restos culturais. Esporos infectam as extremidades cortadas dos toletes, colonizam os tecidos e produzem novas estruturas de reprodução que retornam ao solo e aos resíduos.",cultura:"Cana-de-açúcar"}
+];
+let DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], pragasDoencas:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
 let currentUser = null;
 let API_SESSION_TOKEN = "";
 const API_VERSIONS = {};
@@ -374,6 +390,10 @@ async function loadAll(){
     }
     if(isSingleton && !DB[key]) DB[key] = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
   }
+  if(!hadError && !LOAD_ERRORS.has("pragasDoencas") && DB.pragasDoencas.length===0){
+    DB.pragasDoencas = JSON.parse(JSON.stringify(DEFAULT_PRAGAS_DOENCAS));
+    await persist("pragasDoencas");
+  }
   return hadError;
 }
 async function persist(key){
@@ -396,7 +416,7 @@ async function persist(key){
 /* ===================== DATA API (Google Apps Script backend) ===================== */
 // Preencha com a URL do seu App da Web do Apps Script (veja Code.gs).
 // Enquanto estiver vazia, o app roda apenas localmente nesta aba/sessão.
-const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxsRrwvmeXJqw6YTNpqHlQsZbzU3bvR3PrF6o1-jET1c_8FnWzfDEThM-svW2lDNbLoJg/exec";
+const API_BASE_URL = "https://script.google.com/macros/s/AKfycbw0Jk8cqjxMJUCknl2QJyVrk8vR2eLAUddI1FyYUc_H9HwZrKQALxYDxT9AFlOhHa0nLw/exec";
 
 let __localFallback = {};
 async function apiRequest_(payload){
@@ -458,7 +478,7 @@ async function logout(){
   if(API_SESSION_TOKEN) apiRequest_({action:"logout",token:API_SESSION_TOKEN}).catch(()=>{});
   API_SESSION_TOKEN = "";
   currentUser = null;
-  DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
+  DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], pragasDoencas:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginUser').value = '';
@@ -623,6 +643,23 @@ const FORMS = {
       {h:"Preço",v:r=>r.precoUnitario?fmtBRL(r.precoUnitario):"—"},
     ]
   },
+  pragasDoencas: {
+    title:"Praga / Doença",
+    fields:[
+      {k:"tipo",label:"Classificação",type:"selectstatic",options:["Praga","Doença"],req:true},
+      {k:"nome",label:"Nome da praga / doença",type:"text",req:true},
+      {k:"nomeCientifico",label:"Nome científico",type:"text",req:true,span2:true},
+      {k:"cicloVida",label:"Ciclo de vida / ciclo da doença",type:"textarea",req:true,span2:true},
+      {k:"cultura",label:"Cultura agrícola",type:"text",req:true,span2:true},
+    ],
+    columns:[
+      {h:"Tipo",v:r=>`<span class="badge ${r.tipo==="Doença"?"Químico":"Biológico"}">${esc(r.tipo)}</span>`},
+      {h:"Nome",v:r=>esc(r.nome)},
+      {h:"Nome científico",v:r=>`<i>${esc(r.nomeCientifico)}</i>`},
+      {h:"Ciclo de vida",v:r=>esc(r.cicloVida)||"—"},
+      {h:"Cultura",v:r=>esc(r.cultura)||"—"},
+    ]
+  },
   responsaveis: {
     title:"Responsável Técnico",
     fields:[
@@ -665,6 +702,7 @@ const pageDescriptions = {
   fazendas:"Fazendas vinculadas a cada cliente, com localização e responsável técnico designado.",
   talhoes:"Cadastre um talhão individual ou agrupe vários talhões em um único lançamento, informando a área total conjunta.",
   produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. O preço unitário é sempre o valor de 1 Kg ou 1 L do produto.",
+  pragasDoencas:"Base editável de pragas e doenças agrícolas, iniciada com os principais problemas fitossanitários da cana-de-açúcar.",
   responsaveis:"Profissionais responsáveis técnicos e seus registros CFTA/CREA.",
   receituarios:"Receituário agronômico formal: vincula cliente → fazenda → talhões, produtos recomendados com dose e o responsável técnico emitente.",
   usuarios:"Contas de acesso à plataforma. Papel Administrador libera o Painel Administrativo e a gestão de usuários.",

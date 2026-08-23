@@ -1,5 +1,14 @@
 # Histórico de versões
 
+## v1.2.0 — 2026-08-22
+
+### Incluído
+
+- nova aba editável de Pragas e Doenças;
+- campos de classificação, nome comum, nome científico, ciclo de vida e cultura agrícola;
+- base inicial com 13 pragas e doenças relevantes da cana-de-açúcar;
+- possibilidade de criar, editar e excluir registros do catálogo.
+
 ## v1.1.0 — 2026-08-22
 
 ### Incluído
