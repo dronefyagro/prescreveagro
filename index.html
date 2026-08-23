@@ -295,7 +295,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.2.0</footer>
+    <footer class="version-footer">Prescreve Agro · v1.3.0</footer>
   </div>
 </div>
 
@@ -346,7 +346,15 @@ const DEFAULT_PRAGAS_DOENCAS = [
   {id:"PD-CANA-010",tipo:"Doença",nome:"Mosaico-da-cana",nomeCientifico:"Sugarcane mosaic virus (SCMV)",cicloVida:"O vírus permanece em plantas e material de propagação infectados. É transmitido por mudas e por pulgões de maneira não persistente; após a infecção, multiplica-se sistemicamente nos tecidos da planta.",cultura:"Cana-de-açúcar"},
   {id:"PD-CANA-011",tipo:"Doença",nome:"Escaldadura-das-folhas",nomeCientifico:"Xanthomonas albilineans",cicloVida:"A bactéria sobrevive em plantas e mudas infectadas, entra por ferimentos e coloniza os vasos. Dissemina-se principalmente por material de plantio e instrumentos de corte contaminados.",cultura:"Cana-de-açúcar"},
   {id:"PD-CANA-012",tipo:"Doença",nome:"Raquitismo-da-soqueira",nomeCientifico:"Leifsonia xyli subsp. xyli",cicloVida:"A bactéria coloniza o xilema e permanece em colmos e mudas infectados. A disseminação ocorre principalmente pelo plantio de material contaminado e por ferramentas de corte; a infecção persiste nas soqueiras.",cultura:"Cana-de-açúcar"},
-  {id:"PD-CANA-013",tipo:"Doença",nome:"Podridão-abacaxi",nomeCientifico:"Ceratocystis paradoxa (Thielaviopsis paradoxa)",cicloVida:"O fungo sobrevive no solo e em restos culturais. Esporos infectam as extremidades cortadas dos toletes, colonizam os tecidos e produzem novas estruturas de reprodução que retornam ao solo e aos resíduos.",cultura:"Cana-de-açúcar"}
+  {id:"PD-CANA-013",tipo:"Doença",nome:"Podridão-abacaxi",nomeCientifico:"Ceratocystis paradoxa (Thielaviopsis paradoxa)",cicloVida:"O fungo sobrevive no solo e em restos culturais. Esporos infectam as extremidades cortadas dos toletes, colonizam os tecidos e produzem novas estruturas de reprodução que retornam ao solo e aos resíduos.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-014",tipo:"Praga",nome:"Broca-da-cana do Nordeste",nomeCientifico:"Diatraea flavipennella",cicloVida:"O ciclo completo dura cerca de 65 dias, com potencial de quatro a cinco gerações anuais. Os ovos eclodem em aproximadamente 8 dias; as lagartas passam por cinco ínstares durante cerca de 35 dias, penetram no colmo e abrem galerias; a fase de pupa dura de 12 a 14 dias.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-015",tipo:"Praga",nome:"Broca-peluda-da-cana",nomeCientifico:"Hyponeuma taltula",cicloVida:"Os ovos são depositados individualmente na base da touceira. As lagartas eclodem em 5 a 6 dias e se desenvolvem por 45 a 62 dias, atacando a base e o sistema radicular. A fase pupal dura de 12 a 15 dias e os adultos vivem aproximadamente 5 a 6 dias.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-016",tipo:"Praga",nome:"Cigarrinha-das-folhas",nomeCientifico:"Mahanarva posticata",cicloVida:"As fêmeas depositam ovos nas bainhas próximas à base das touceiras. As ninfas eclodem após cerca de 17 dias, passam por aproximadamente cinco ínstares durante 48 dias e permanecem protegidas por espuma; os adultos vivem em média de 7 a 11 dias.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-017",tipo:"Praga",nome:"Curculionídeo-rajado-da-cana",nomeCientifico:"Metamasius hemipterus",cicloVida:"Os ovos são colocados em rachaduras ou danos do colmo e incubam por 7 a 12 dias. As larvas abrem galerias internas durante 26 a 50 dias, formam casulo com fibras da planta e passam pela fase pupal por 5 a 13 dias antes da emergência dos adultos.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-018",tipo:"Praga",nome:"Broca-gigante-da-cana",nomeCientifico:"Telchin licus",cicloVida:"O ciclo completo dura aproximadamente 180 dias, normalmente com dois ciclos anuais. Os ovos incubam por 7 a 14 dias; as lagartas penetram a base da touceira e podem permanecer por até quatro meses; a fase pupal dura de 30 a 45 dias e os adultos vivem de 10 a 15 dias.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-019",tipo:"Praga",nome:"Lagartas desfolhadoras",nomeCientifico:"Spodoptera frugiperda; Alabama argillacea; Mocis latipes",cicloVida:"Mariposas depositam ovos nas folhas ou em áreas próximas à cultura. As lagartas passam por sucessivos ínstares alimentando-se da folhagem, depois empupam no solo ou entre resíduos vegetais e originam novos adultos.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-020",tipo:"Praga",nome:"Nematoides fitoparasitas",nomeCientifico:"Meloidogyne spp.; Pratylenchus spp.; Helicotylenchus spp.",cicloVida:"O ciclo inclui ovo, estádios juvenis e adulto. Juvenis infectivos deslocam-se no solo e penetram as raízes; a multiplicação ocorre nos tecidos radiculares ou na rizosfera, produzindo novas gerações enquanto houver raízes hospedeiras e condições favoráveis.",cultura:"Cana-de-açúcar"},
+  {id:"PD-CANA-021",tipo:"Doença",nome:"Podridão-vermelha",nomeCientifico:"Colletotrichum falcatum; Fusarium verticillioides",cicloVida:"Os fungos sobrevivem em restos culturais, colmos e material de plantio. Esporos ou micélio infectam tecidos, especialmente por ferimentos e galerias de brocas, colonizam o interior do colmo e produzem estruturas que disseminam o patógeno para novos tecidos.",cultura:"Cana-de-açúcar"}
 ];
 let DB = { clientes:[], fazendas:[], talhoes:[], produtos:[], pragasDoencas:[], responsaveis:[], receituarios:[], diretrizes:null, usuarios:[] };
 let currentUser = null;
@@ -390,9 +398,17 @@ async function loadAll(){
     }
     if(isSingleton && !DB[key]) DB[key] = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
   }
-  if(!hadError && !LOAD_ERRORS.has("pragasDoencas") && DB.pragasDoencas.length===0){
-    DB.pragasDoencas = JSON.parse(JSON.stringify(DEFAULT_PRAGAS_DOENCAS));
-    await persist("pragasDoencas");
+  if(!hadError && !LOAD_ERRORS.has("pragasDoencas")){
+    const normalizeCatalog = value => String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+    const missingCatalog = DEFAULT_PRAGAS_DOENCAS.filter(item=>!DB.pragasDoencas.some(existing=>
+      existing.id===item.id ||
+      normalizeCatalog(existing.nomeCientifico)===normalizeCatalog(item.nomeCientifico) ||
+      (normalizeCatalog(existing.nome)===normalizeCatalog(item.nome) && normalizeCatalog(existing.cultura)===normalizeCatalog(item.cultura))
+    ));
+    if(missingCatalog.length){
+      DB.pragasDoencas.push(...JSON.parse(JSON.stringify(missingCatalog)));
+      await persist("pragasDoencas");
+    }
   }
   return hadError;
 }
