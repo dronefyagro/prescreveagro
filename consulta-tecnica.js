@@ -20,17 +20,11 @@ function renderConsultaTecnicaPage(){
   const alvos = [...new Set(registros.map(item=>item.alvo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
   document.getElementById("pageContent").innerHTML = `
     <div class="pagehead"><div><h1>🔎 Consulta Técnica</h1><p>${pageDescriptions.consultaTecnica}</p></div></div>
-    <div class="stats" style="margin-bottom:16px;">
-      <div class="stat"><div class="num">${CONSULTA_TECNICA.quimicos.length}</div><div class="lbl">Registros químicos</div></div>
-      <div class="stat"><div class="num">${CONSULTA_TECNICA.biologicos.length}</div><div class="lbl">Agentes biológicos</div></div>
-      <div class="stat"><div class="num">${alvos.length}</div><div class="lbl">Alvos e usos cadastrados</div></div>
-    </div>
     <div class="settings-card" style="margin-bottom:16px;"><div class="formgrid">
       <div class="f span2"><label>Pesquisar</label><input type="search" value="${esc(consultaTecnicaFiltros.texto)}" placeholder="Produto, ingrediente ativo, agente biológico, empresa ou alvo..." oninput="atualizaFiltroConsulta('texto',this.value)"></div>
       <div class="f"><label>Tipo de controle</label><select onchange="atualizaFiltroConsulta('tipo',this.value)">${["Todos","Químico","Biológico"].map(v=>`<option value="${v}" ${consultaTecnicaFiltros.tipo===v?"selected":""}>${v}</option>`).join("")}</select></div>
       <div class="f"><label>Alvo ou uso principal</label><select onchange="atualizaFiltroConsulta('alvo',this.value)"><option value="Todos">Todos</option>${alvos.map(v=>`<option value="${esc(v)}" ${consultaTecnicaFiltros.alvo===v?"selected":""}>${esc(v)}</option>`).join("")}</select></div>
     </div></div>
-    <div class="subtle" style="margin-bottom:8px;">Fonte: planilha MIP.xlsx fornecida para o Prescreve Agro. Antes de recomendar ou aplicar, confirme registro, bula, cultura, alvo, dose e restrições vigentes nos órgãos oficiais.</div>
     <div id="consultaTecnicaResultados"></div>`;
   renderConsultaTecnicaResultados();
 }
@@ -49,7 +43,6 @@ function renderConsultaTecnicaResultados(){
   if(!wrap) return;
   if(!exibidos.length){ wrap.innerHTML='<div class="tablewrap"><div class="empty"><b>Nenhum resultado encontrado</b>Altere os filtros ou pesquise outro termo.</div></div>'; return; }
   wrap.innerHTML = `
-    <div class="subtle" style="margin-bottom:8px;">${filtrados.length>limite?`Exibindo os primeiros ${limite} de ${filtrados.length} resultados. Refine a pesquisa para reduzir a lista.`:`${filtrados.length} resultado${filtrados.length===1?"":"s"}.`}</div>
     <div class="tablewrap"><table><thead><tr><th>Tipo</th><th>Alvo / uso principal</th><th>Produto / agente</th><th>Composição / tipo</th><th>Detalhes</th><th>Classificações</th></tr></thead><tbody>
     ${exibidos.map(item=>`<tr>
       <td><span class="badge ${item.tipo==="Biológico"?"green":"amber"}">${esc(item.tipo)}</span></td>
