@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## v1.4.0 — 2026-08-22
+
+### Incluído
+
+- seleção múltipla de pragas e doenças-alvo diretamente no Receituário;
+- opções carregadas do banco editável da aba Pragas e Doenças;
+- agrupamento visual entre pragas e doenças, com nome comum e científico;
+- gravação dos vínculos por identificador e exibição dos alvos no receituário;
+- compatibilidade com receituários antigos que possuam alvo em texto livre.
+
 ## v1.3.0 — 2026-08-22
 
 ### Incluído
