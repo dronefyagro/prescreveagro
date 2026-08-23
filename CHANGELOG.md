@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## v1.1.0 — 2026-08-22
+
+### Incluído
+
+- cadastro de talhões individuais ou em grupos;
+- vários códigos de talhão em um único lançamento;
+- área total conjunta do grupo;
+- identificação do grupo nas listas e nos receituários;
+- compatibilidade com talhões cadastrados nas versões anteriores.
+
 ## v1.0.0 — 2026-08-22
 
 Primeira versão formal do Prescreve Agro.
