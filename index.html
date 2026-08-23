@@ -295,7 +295,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.4.0</footer>
+    <footer class="version-footer">Prescreve Agro · v1.5.0</footer>
   </div>
 </div>
 
@@ -309,7 +309,7 @@ tbody tr:hover{background:#F7F6EC;}
 /* ===================== STATE & STORAGE ===================== */
 const MODULE_GROUPS = [
   {label:"Base cadastral", keys:["clientes","fazendas","talhoes"]},
-  {label:"Catálogo", keys:["produtos","pragasDoencas","responsaveis"]},
+  {label:"Catálogo", keys:["produtos","pragasDoencas","consultaTecnica","responsaveis"]},
   {label:"Documentos", keys:["receituarios","diretrizes"]},
   {label:"Administração", keys:["admin","usuarios"], adminOnly:true},
 ];
@@ -319,6 +319,7 @@ const MODULES = {
   talhoes: {label:"Talhões", icon:"🗺️"},
   produtos: {label:"Produtos", icon:"🧪"},
   pragasDoencas: {label:"Pragas e Doenças", icon:"🐛"},
+  consultaTecnica: {label:"Consulta Técnica", icon:"🔎", singleton:true, virtual:true},
   responsaveis: {label:"Responsáveis Técnicos", icon:"🪪"},
   receituarios: {label:"Receituário Agronômico", icon:"📋"},
   diretrizes: {label:"Diretrizes Operacionais", icon:"📐", singleton:true},
@@ -719,6 +720,7 @@ const pageDescriptions = {
   talhoes:"Cadastre um talhão individual ou agrupe vários talhões em um único lançamento, informando a área total conjunta.",
   produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. O preço unitário é sempre o valor de 1 Kg ou 1 L do produto.",
   pragasDoencas:"Base editável de pragas e doenças agrícolas, iniciada com os principais problemas fitossanitários da cana-de-açúcar.",
+  consultaTecnica:"Consulta de produtos químicos e agentes biológicos para apoio ao manejo integrado de pragas.",
   responsaveis:"Profissionais responsáveis técnicos e seus registros CFTA/CREA.",
   receituarios:"Receituário agronômico formal: vincula cliente → fazenda → talhões, produtos recomendados com dose e o responsável técnico emitente.",
   usuarios:"Contas de acesso à plataforma. Papel Administrador libera o Painel Administrativo e a gestão de usuários.",
@@ -727,6 +729,7 @@ const pageDescriptions = {
 /* ===================== PAGE RENDER ===================== */
 function renderPage(){
   if(activeModule === "receituarios"){ renderReceituarioPage(); return; }
+  if(activeModule === "consultaTecnica"){ renderConsultaTecnicaPage(); return; }
   if(activeModule === "diretrizes"){ renderDiretrizesPage(); return; }
   if(activeModule === "admin"){ renderAdminDashboard(); return; }
 
@@ -1823,5 +1826,6 @@ if("serviceWorker" in navigator){
   });
 }
 </script>
+<script src="consulta-tecnica.js"></script>
 </body>
 </html>
