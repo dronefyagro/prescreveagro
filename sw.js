@@ -1,5 +1,5 @@
-const CACHE_NAME = "prescreve-agro-v7";
-const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./consulta-tecnica.js"];
+const CACHE_NAME = "prescreve-agro-v8";
+const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./consulta-tecnica.js", "./icon-512-maskable.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

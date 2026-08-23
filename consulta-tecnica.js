@@ -39,13 +39,13 @@ function renderConsultaTecnicaResultados(){
     if(consultaTecnicaFiltros.alvo!=="Todos" && item.alvo!==consultaTecnicaFiltros.alvo) return false;
     return !termo || normalizaConsulta(Object.values(item).join(" ")).includes(termo);
   });
-  const limite=100, exibidos=filtrados.slice(0,limite), wrap=document.getElementById("consultaTecnicaResultados");
+  const exibidos=filtrados, wrap=document.getElementById("consultaTecnicaResultados");
   if(!wrap) return;
   if(!exibidos.length){ wrap.innerHTML='<div class="tablewrap"><div class="empty"><b>Nenhum resultado encontrado</b>Altere os filtros ou pesquise outro termo.</div></div>'; return; }
   wrap.innerHTML = `
     <div class="tablewrap"><table><thead><tr><th>Tipo</th><th>Alvo / uso principal</th><th>Produto / agente</th><th>Composição / tipo</th><th>Detalhes</th><th>Classificações</th></tr></thead><tbody>
     ${exibidos.map(item=>`<tr>
-      <td><span class="badge ${item.tipo==="Biológico"?"green":"amber"}">${esc(item.tipo)}</span></td>
+      <td><span class="badge ${item.tipo}">${esc(item.tipo)}</span></td>
       <td>${esc(item.alvo)||"—"}</td><td><b>${esc(item.nome)||"—"}</b></td><td>${esc(item.ingredienteAtivo)||"—"}</td>
       <td>${item.tipo==="Químico"?`${esc(item.formulacao)||"—"}${item.registrante?`<div class="subtle" style="margin-top:4px;">${esc(item.registrante)}</div>`:""}`:(esc(item.formulacao)||"—")}</td>
       <td>${item.tipo==="Químico"?`Toxicológica: ${esc(item.classificacaoToxicologica)||"—"}<br>Ambiental: ${esc(item.classificacaoAmbiental)||"—"}`:"Controle biológico"}</td>
