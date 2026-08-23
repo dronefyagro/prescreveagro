@@ -407,8 +407,14 @@ async function loadAll(){
       (normalizeCatalog(existing.nome)===normalizeCatalog(item.nome) && normalizeCatalog(existing.cultura)===normalizeCatalog(item.cultura))
     ));
     if(missingCatalog.length){
-      DB.pragasDoencas.push(...JSON.parse(JSON.stringify(missingCatalog)));
-      await persist("pragasDoencas");
+      const previousCatalog = DB.pragasDoencas;
+      DB.pragasDoencas = [...previousCatalog, ...JSON.parse(JSON.stringify(missingCatalog))];
+      try{
+        await persist("pragasDoencas");
+      }catch(_){
+        DB.pragasDoencas = previousCatalog;
+        hadError = true;
+      }
     }
   }
   return hadError;
@@ -1075,8 +1081,8 @@ function renderReceituarioPage(){
             ${rows.slice().reverse().map(r=>{
               const cId = receituarioClienteId(r);
               return `<tr>
-                <td class="mono">${r.numero}</td>
-                <td class="mono">${r.codigoRastreio||'—'}</td>
+                <td class="mono">${esc(r.numero)}</td>
+                <td class="mono">${esc(r.codigoRastreio)||'—'}</td>
                 <td>${cId?clienteLabel(cId):"—"}</td>
                 <td>${receituarioFazendasLabel(r)}</td>
                 <td>${(r.talhaoIds||[]).map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${talhaoDisplayLabel(t)}</span>`:"";}).join('')}</td>
@@ -1565,6 +1571,7 @@ async function saveReceituario(){
   recForm.custoHaParcial = faltaPreco;
   recForm.custoUnidadeIncerta = unidadeIncerta;
 
+  const previousHistorico = recForm.historico ? recForm.historico.slice() : null;
   if(!recForm.historico) recForm.historico = [];
   recForm.historico.push({
     usuario: currentUser ? currentUser.nome : 'desconhecido',
@@ -1593,6 +1600,7 @@ async function saveReceituario(){
     await persist("receituarios");
   }catch(_){
     DB.receituarios = previousReceituarios;
+    recForm.historico = previousHistorico;
     return;
   }
   closeForm();
@@ -1693,9 +1701,13 @@ async function saveDiretrizes(){
   showToast("Diretrizes operacionais atualizadas.");
 }
 function resetDiretrizes(){
-  if(!confirm("Restaurar o texto padrão das diretrizes? As edições atuais serão substituídas.")) return;
-  DB.diretrizes = JSON.parse(JSON.stringify(DEFAULT_DIRETRIZES));
-  openDiretrizesForm();
+  if(!confirm("Restaurar o texto padrão das diretrizes? As edições atuais do formulário serão substituídas.")) return;
+  const container = document.getElementById('diretrizesFields');
+  if(!container) return;
+  [...DIRETRIZES_SECTIONS.map(s=>s.k), "confidencialidade"].forEach(k=>{
+    const el = container.querySelector(`[data-k="${k}"]`);
+    if(el) el.value = DEFAULT_DIRETRIZES[k] || "";
+  });
 }
 
 /* ===================== PRINT VIEW ===================== */
@@ -1798,10 +1810,10 @@ function openPrintView(id){
             <div class="t">Consultoria Dronefy-MAPCANA</div>
           </div>
         </div>
-        <div class="num">Nº ${r.numero}<br><span style="color:var(--gold);font-weight:700;">${r.codigoRastreio||''}</span>${r.validade?`<br>Válido até ${fmtDate(r.validade)}`:''}</div>
+        <div class="num">Nº ${esc(r.numero)}<br><span style="color:var(--gold);font-weight:700;">${esc(r.codigoRastreio)||''}</span>${r.validade?`<br>Válido até ${fmtDate(r.validade)}`:''}</div>
       </div>
       <h1>Receituário Agronômico</h1>
-      <div style="text-align:center;font-size:10.5px;color:var(--ink-soft);margin-top:-14px;margin-bottom:16px;">Emitido em ${fmtDate(r.dataEmissao)} · Código de rastreabilidade: <b class="mono">${r.codigoRastreio||'—'}</b></div>
+      <div style="text-align:center;font-size:10.5px;color:var(--ink-soft);margin-top:-14px;margin-bottom:16px;">Emitido em ${fmtDate(r.dataEmissao)} · Código de rastreabilidade: <b class="mono">${esc(r.codigoRastreio)||'—'}</b></div>
 
       <div class="doc-grid">
         <div class="row"><span>Cliente</span><b>${c?esc(c.nome):'—'}</b></div>
