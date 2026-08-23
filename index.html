@@ -445,14 +445,20 @@ let __localFallback = {};
 async function apiRequest_(payload){
   if(!API_BASE_URL || API_BASE_URL.startsWith("COLE_AQUI")) throw Object.assign(new Error("API não configurada"),{code:"api_not_configured"});
   let res;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), 20000);
   try{
     res = await fetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
-  }catch(_){
-    throw Object.assign(new Error("Falha de conexão"),{code:"network_error"});
+  }catch(error){
+    const code = error && error.name==="AbortError" ? "timeout_error" : "network_error";
+    throw Object.assign(new Error(code==="timeout_error" ? "Tempo de resposta excedido" : "Falha de conexão"),{code});
+  }finally{
+    clearTimeout(timeoutId);
   }
   let data;
   try{ data = await res.json(); }
@@ -491,6 +497,7 @@ async function tryLogin(){
       invalid_credentials:"Usuário ou senha inválidos.",
       too_many_attempts:"Muitas tentativas. Aguarde 10 minutos.",
       network_error:"Sem conexão com o servidor.",
+      timeout_error:"O servidor demorou para responder. Tente novamente.",
       api_not_configured:"API ainda não configurada."
     };
     err.textContent = messages[e.code] || "Não foi possível entrar.";
