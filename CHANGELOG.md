@@ -1,5 +1,20 @@
 # Histórico de versões
 
+## v1.5.1 — 2026-08-23
+
+### Corrigido
+
+- restauração do estado da tela quando uma gravação ou exclusão falha;
+- compatibilidade de listagem e impressão com receituários antigos sem lista de talhões;
+- bloqueio da exclusão de pragas e doenças já utilizadas em receituários;
+- proteção da exibição e edição das diretrizes contra conteúdo HTML indevido;
+- restauração das diretrizes padrão sem alterar os dados antes de salvar;
+- remoção de histórico duplicado após tentativa de gravação sem sucesso;
+- estilo de identificação dos controles químicos e biológicos na Consulta Técnica;
+- exibição de todos os resultados filtrados da Consulta Técnica;
+- limite de espera e mensagem específica quando a API demora para responder;
+- cache offline do ícone instalável da plataforma.
+
 ## v1.5.0 — 2026-08-23
 
 ### Incluído
