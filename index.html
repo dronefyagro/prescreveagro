@@ -295,7 +295,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.3.0</footer>
+    <footer class="version-footer">Prescreve Agro · v1.4.0</footer>
   </div>
 </div>
 
@@ -1038,7 +1038,7 @@ function getPorFazendaMap(r){
   if(r.porFazenda) return r.porFazenda;
   const fid = (r.fazendaIds && r.fazendaIds[0]) || r.fazendaId;
   if(!fid) return {};
-  return { [fid]: { pragaAlvo: r.pragaAlvo||"", produtos: r.produtos||[], herbicidas: r.herbicidas||[] } };
+  return { [fid]: { pragaAlvo: r.pragaAlvo||"", pragaDoencaIds: r.pragaDoencaIds||[], produtos: r.produtos||[], herbicidas: r.herbicidas||[] } };
 }
 
 function renderReceituarioPage(){
@@ -1118,7 +1118,8 @@ function openReceituarioForm(id){
   }
   if(!recForm.porFazenda) recForm.porFazenda = getPorFazendaMap(record || {});
   recForm.fazendaIds.forEach(fid=>{
-    if(!recForm.porFazenda[fid]) recForm.porFazenda[fid] = {pragaAlvo:"",produtos:[{produtoId:"",dose:"",obs:""}],herbicidas:[{produtoId:"",dose:"",obs:""}]};
+    if(!recForm.porFazenda[fid]) recForm.porFazenda[fid] = {pragaAlvo:"",pragaDoencaIds:[],produtos:[{produtoId:"",dose:"",obs:""}],herbicidas:[{produtoId:"",dose:"",obs:""}]};
+    if(!Array.isArray(recForm.porFazenda[fid].pragaDoencaIds)) recForm.porFazenda[fid].pragaDoencaIds=[];
     if(!recForm.porFazenda[fid].produtos || recForm.porFazenda[fid].produtos.length===0) recForm.porFazenda[fid].produtos=[{produtoId:"",dose:"",obs:""}];
     if(!recForm.porFazenda[fid].herbicidas || recForm.porFazenda[fid].herbicidas.length===0) recForm.porFazenda[fid].herbicidas=[{produtoId:"",dose:"",obs:""}];
   });
@@ -1216,7 +1217,7 @@ function renderFazendaChecklist(){
 function toggleFazenda(id, checked){
   if(checked){
     recForm.fazendaIds.push(id);
-    if(!recForm.porFazenda[id]) recForm.porFazenda[id] = {pragaAlvo:"",produtos:[{produtoId:"",dose:"",obs:""}],herbicidas:[{produtoId:"",dose:"",obs:""}]};
+    if(!recForm.porFazenda[id]) recForm.porFazenda[id] = {pragaAlvo:"",pragaDoencaIds:[],produtos:[{produtoId:"",dose:"",obs:""}],herbicidas:[{produtoId:"",dose:"",obs:""}]};
   } else {
     recForm.fazendaIds = recForm.fazendaIds.filter(x=>x!==id);
     recForm.talhaoIds = recForm.talhaoIds.filter(tid=>{
@@ -1271,8 +1272,20 @@ function renderFazendaBlocos(){
       <div class="settings-card" style="margin-bottom:14px;">
         <h3>${esc(f?f.nome:'Fazenda')}</h3>
         <div class="f span2" style="margin-bottom:12px;">
-          <label>Praga / doença-alvo</label>
-          <input type="text" value="${esc(bucket.pragaAlvo)}" placeholder="ex: Complexo cigarrinhas, Broca Gigante..." oninput="updateFazendaPraga('${fid}', this.value)">
+          <label>Pragas e doenças-alvo</label>
+          <div class="checklist" style="max-height:210px;overflow:auto;">
+            ${DB.pragasDoencas.length ? ['Praga','Doença'].map(tipo=>{
+              const itens = DB.pragasDoencas.filter(item=>item.tipo===tipo);
+              if(!itens.length) return '';
+              return `<div class="checkgroup-title">${tipo}s</div>${itens.map(item=>`
+                <label class="checkrow">
+                  <input type="checkbox" ${(bucket.pragaDoencaIds||[]).includes(item.id)?'checked':''} onchange="toggleFazendaAlvo('${fid}','${item.id}',this.checked)">
+                  <span><b>${esc(item.nome)}</b>${item.nomeCientifico?` — <i>${esc(item.nomeCientifico)}</i>`:''}</span>
+                </label>
+              `).join('')}`;
+            }).join('') : '<div class="checkempty">Nenhuma praga ou doença cadastrada. Cadastre os alvos na aba Pragas e Doenças.</div>'}
+          </div>
+          ${bucket.pragaAlvo?`<div class="subtle" style="margin-top:6px;">Registro antigo preservado: ${esc(bucket.pragaAlvo)}</div>`:''}
         </div>
         <div class="doc-section-title" style="margin-top:8px;">Produtos recomendados</div>
         <div id="rec_produtosList_${fid}"></div>
@@ -1288,7 +1301,19 @@ function renderFazendaBlocos(){
     renderProdRows(fid,'herbicidas');
   });
 }
-function updateFazendaPraga(fazendaId, value){ recForm.porFazenda[fazendaId].pragaAlvo = value; }
+function toggleFazendaAlvo(fazendaId, alvoId, checked){
+  const bucket = recForm.porFazenda[fazendaId];
+  if(!Array.isArray(bucket.pragaDoencaIds)) bucket.pragaDoencaIds = [];
+  if(checked && !bucket.pragaDoencaIds.includes(alvoId)) bucket.pragaDoencaIds.push(alvoId);
+  if(!checked) bucket.pragaDoencaIds = bucket.pragaDoencaIds.filter(id=>id!==alvoId);
+}
+function alvosFazendaLabel(bucket){
+  const nomes = (bucket.pragaDoencaIds||[])
+    .map(id=>DB.pragasDoencas.find(item=>item.id===id))
+    .filter(Boolean)
+    .map(item=>item.nome);
+  return nomes.join(', ') || bucket.pragaAlvo || '';
+}
 
 function classFilterFor(listKey){
   return listKey==='herbicidas' ? (c=>c==='Herbicida') : (c=>c!=='Herbicida');
@@ -1501,9 +1526,10 @@ async function saveReceituario(){
   let hectaresTotal = 0;
   let faltaPreco = false, unidadeIncerta = false;
   recForm.fazendaIds.forEach(fid=>{
-    const bucket = recForm.porFazenda[fid] || {pragaAlvo:"",produtos:[],herbicidas:[]};
+    const bucket = recForm.porFazenda[fid] || {pragaAlvo:"",pragaDoencaIds:[],produtos:[],herbicidas:[]};
     cleanPorFazenda[fid] = {
       pragaAlvo: bucket.pragaAlvo||"",
+      pragaDoencaIds: (bucket.pragaDoencaIds||[]).filter(id=>DB.pragasDoencas.some(item=>item.id===id)),
       produtos: (bucket.produtos||[]).filter(p=>p.produtoId),
       herbicidas: (bucket.herbicidas||[]).filter(p=>p.produtoId)
     };
@@ -1673,7 +1699,7 @@ function openPrintView(id){
   const porFazenda = getPorFazendaMap(r);
 
   const blocosFazenda = fazendasInfo.map(f=>{
-    const bucket = porFazenda[f.id] || {pragaAlvo:"",produtos:[],herbicidas:[]};
+    const bucket = porFazenda[f.id] || {pragaAlvo:"",pragaDoencaIds:[],produtos:[],herbicidas:[]};
     const talhoesFazenda = talhoesInfo.filter(t=>t.fazendaId===f.id);
     const haFazenda = talhoesFazenda.reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
     const custoFazenda = calcCustoHa(bucket.produtos).total + calcCustoHa(bucket.herbicidas).total;
@@ -1681,7 +1707,7 @@ function openPrintView(id){
       <div class="doc-section-title" style="margin-top:22px;">${esc(f.nome)}</div>
       <div style="font-size:11.5px;color:var(--ink-soft);margin:-6px 0 8px;">
         Talhões: ${talhoesFazenda.map(t=>talhaoCodesLabel(t)).join(' · ')||'—'} (${fmtHa(haFazenda)} ha)
-        · Praga/doença-alvo: ${esc(bucket.pragaAlvo)||'—'}
+        · Pragas/doenças-alvo: ${esc(alvosFazendaLabel(bucket))||'—'}
         ${custoFazenda>0?`· Custo: ${fmtBRL(custoFazenda)}/ha`:''}
       </div>
       <table>
