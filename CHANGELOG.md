@@ -1,5 +1,17 @@
 # Histórico de versões
 
+## v1.5.0 — 2026-08-23
+
+### Incluído
+
+- nova aba Consulta Técnica para apoio ao manejo integrado de pragas;
+- base importada da planilha MIP.xlsx com 219 registros químicos e 9 agentes biológicos;
+- pesquisa por produto, ingrediente ativo, agente biológico, empresa e alvo;
+- filtros por tipo de controle e alvo ou uso principal;
+- exibição de formulação, registrante e classificações toxicológica e ambiental dos produtos químicos;
+- exibição de categoria, grupo-alvo e uso principal dos agentes biológicos;
+- aviso para conferência de registro, bula, cultura, dose e restrições oficiais antes da recomendação.
+
 ## v1.4.0 — 2026-08-22
 
 ### Incluído
