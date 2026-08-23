@@ -1,0 +1,24 @@
+# Histórico de versões
+
+## v1.0.0 — 2026-08-22
+
+Primeira versão formal do Prescreve Agro.
+
+### Incluído
+
+- cadastros de clientes, fazendas, talhões, produtos e responsáveis técnicos;
+- emissão de receituários agronômicos;
+- diretrizes operacionais;
+- perfis Administrador e Técnico;
+- autenticação validada pelo Google Apps Script;
+- sessões temporárias e limitação de tentativas de login;
+- proteção de leitura e gravação da API;
+- controle de acesso ao módulo de usuários;
+- detecção de alterações simultâneas;
+- identificação da versão no rodapé da plataforma.
+
+## Regra de versionamento
+
+- **Correção**: incrementa o último número — exemplo: v1.0.1.
+- **Nova funcionalidade compatível**: incrementa o número central — exemplo: v1.1.0.
+- **Mudança estrutural incompatível**: incrementa o primeiro número — exemplo: v2.0.0.
