@@ -295,7 +295,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.5.0</footer>
+    <footer class="version-footer">Prescreve Agro · v1.5.1</footer>
   </div>
 </div>
 
@@ -866,13 +866,22 @@ async function saveRecord(moduleKey){
     }
   }
 
+  const previousRecords = DB[moduleKey];
+  const nextRecords = previousRecords.slice();
   if(editingId){
-    const idx = DB[moduleKey].findIndex(r=>r.id===editingId);
-    DB[moduleKey][idx] = record;
+    const idx = nextRecords.findIndex(r=>r.id===editingId);
+    if(idx<0){ showToast("Registro não encontrado. Atualize a página."); return; }
+    nextRecords[idx] = record;
   } else {
-    DB[moduleKey].push(record);
+    nextRecords.push(record);
   }
-  await persist(moduleKey);
+  DB[moduleKey] = nextRecords;
+  try{
+    await persist(moduleKey);
+  }catch(_){
+    DB[moduleKey] = previousRecords;
+    return;
+  }
   closeForm();
   renderNav();
   renderPage();
@@ -883,6 +892,7 @@ const DEPENDENCIES = {
   fazendas: [{key:"talhoes", field:"fazendaId", label:"talhão(ões) vinculado(s)"}, {key:"receituarios", label:"receituário(s) vinculado(s)", isFazendaList:true}],
   talhoes: [{key:"receituarios", field:"talhaoIds", label:"receituário(s) vinculado(s)", isArrayField:true}],
   produtos: [{key:"receituarios", field:"produtos", label:"receituário(s) vinculado(s)", isProductList:true}],
+  pragasDoencas: [{key:"receituarios", label:"receituário(s) vinculado(s)", isPragaList:true}],
   responsaveis: [{key:"fazendas", field:"responsavelId", label:"fazenda(s) vinculada(s)"}, {key:"receituarios", field:"responsavelId", label:"receituário(s) vinculado(s)"}],
 };
 function findDependents(moduleKey, id){
@@ -895,6 +905,7 @@ function findDependents(moduleKey, id){
       return Object.values(porFaz).some(b=>(b.produtos||[]).some(p=>p.produtoId===id) || (b.herbicidas||[]).some(p=>p.produtoId===id));
     }).length;
     else if(rule.isFazendaList) count = DB[rule.key].filter(r=>(r.fazendaIds||(r.fazendaId?[r.fazendaId]:[])).includes(id)).length;
+    else if(rule.isPragaList) count = DB[rule.key].filter(r=>Object.values(getPorFazendaMap(r)).some(b=>(b.pragaDoencaIds||[]).includes(id))).length;
     else count = DB[rule.key].filter(r=>r[rule.field]===id).length;
     if(count>0) return {count, label:rule.label};
   }
@@ -915,8 +926,14 @@ async function deleteRecord(moduleKey, id){
     }
   }
   if(!confirm("Excluir este registro? Essa ação não pode ser desfeita.")) return;
-  DB[moduleKey] = DB[moduleKey].filter(r=>r.id!==id);
-  await persist(moduleKey);
+  const previousRecords = DB[moduleKey];
+  DB[moduleKey] = previousRecords.filter(r=>r.id!==id);
+  try{
+    await persist(moduleKey);
+  }catch(_){
+    DB[moduleKey] = previousRecords;
+    return;
+  }
   renderNav();
   renderPage();
   showToast("Registro excluído.");
@@ -1008,8 +1025,8 @@ function renderAdminDashboard(){
           <tbody>
             ${recentes.map(r=>{
               return `<tr>
-                <td class="mono">${r.numero}</td>
-                <td class="mono">${r.codigoRastreio||'—'}</td>
+                <td class="mono">${esc(r.numero)||'—'}</td>
+                <td class="mono">${esc(r.codigoRastreio)||'—'}</td>
                 <td>${receituarioFazendasLabel(r)}</td>
                 <td>${respLabel(r.responsavelId)}</td>
                 <td class="mono">${r.custoHaCalculado?fmtBRL(r.custoHaCalculado):'—'}</td>
@@ -1062,9 +1079,9 @@ function renderReceituarioPage(){
                 <td class="mono">${r.codigoRastreio||'—'}</td>
                 <td>${cId?clienteLabel(cId):"—"}</td>
                 <td>${receituarioFazendasLabel(r)}</td>
-                <td>${r.talhaoIds.map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${talhaoDisplayLabel(t)}</span>`:"";}).join('')}</td>
+                <td>${(r.talhaoIds||[]).map(tid=>{const t=DB.talhoes.find(x=>x.id===tid); return t?`<span class="pill">${talhaoDisplayLabel(t)}</span>`:"";}).join('')}</td>
                 <td>${respLabel(r.responsavelId)}</td>
-                <td class="mono">${r.artTrt||'—'}</td>
+                <td class="mono">${esc(r.artTrt)||'—'}</td>
                 <td class="mono">${r.custoTotalCalculado?fmtBRL(r.custoTotalCalculado)+(r.custoHaParcial?' *':''):'—'}</td>
                 <td>${fmtDate(r.dataEmissao)}</td>
                 <td>
@@ -1556,19 +1573,28 @@ async function saveReceituario(){
     timestamp: new Date().toISOString()
   });
 
+  const previousReceituarios = DB.receituarios;
+  const nextReceituarios = previousReceituarios.slice();
   if(editingId){
-    const idx = DB.receituarios.findIndex(r=>r.id===editingId);
+    const idx = nextReceituarios.findIndex(r=>r.id===editingId);
+    if(idx<0){ showToast("Receituário não encontrado. Atualize a página."); return; }
     recForm.id = editingId;
-    recForm.numero = DB.receituarios[idx].numero;
-    recForm.codigoRastreio = DB.receituarios[idx].codigoRastreio || genRastreio(recForm.dataEmissao);
-    DB.receituarios[idx] = recForm;
+    recForm.numero = nextReceituarios[idx].numero;
+    recForm.codigoRastreio = nextReceituarios[idx].codigoRastreio || genRastreio(recForm.dataEmissao);
+    nextReceituarios[idx] = recForm;
   } else {
     recForm.id = uid();
     recForm.numero = nextReceituarioNumero();
     recForm.codigoRastreio = genRastreio(recForm.dataEmissao);
-    DB.receituarios.push(recForm);
+    nextReceituarios.push(recForm);
   }
-  await persist("receituarios");
+  DB.receituarios = nextReceituarios;
+  try{
+    await persist("receituarios");
+  }catch(_){
+    DB.receituarios = previousReceituarios;
+    return;
+  }
   closeForm();
   renderNav();
   renderPage();
@@ -1583,11 +1609,11 @@ function genRastreio(dataEmissao){
 /* ===================== DIRETRIZES OPERACIONAIS (singleton) ===================== */
 function bulletListHtml(text){
   const lines = (text||"").split("\n").map(l=>l.trim()).filter(Boolean);
-  if(lines.length<=1) return `<p>${lines[0]||""}</p>`;
-  return `<ul>${lines.map(l=>`<li>${l}</li>`).join('')}</ul>`;
+  if(lines.length<=1) return `<p>${esc(lines[0]||"")}</p>`;
+  return `<ul>${lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`;
 }
 function paragraphsHtml(text){
-  return (text||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>`<p>${l}</p>`).join('');
+  return (text||"").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>`<p>${esc(l)}</p>`).join('');
 }
 
 const DIRETRIZES_SECTIONS = [
@@ -1635,9 +1661,9 @@ function openDiretrizesForm(){
     <div class="msub">Uma linha = um item da lista (exceto ordem de tanque, que é uma frase única). Esse conteúdo passa a valer para todos os próximos receituários impressos.</div>
     <div class="formgrid one" id="diretrizesFields">
       ${DIRETRIZES_SECTIONS.map(s=>`
-        <div class="f"><label>${s.label}</label><textarea data-k="${s.k}" style="min-height:${s.k==='ordemTanque'?'44px':'86px'};">${d[s.k]||''}</textarea></div>
+        <div class="f"><label>${s.label}</label><textarea data-k="${s.k}" style="min-height:${s.k==='ordemTanque'?'44px':'86px'};">${esc(d[s.k]||'')}</textarea></div>
       `).join('')}
-      <div class="f"><label>Confidencialidade</label><textarea data-k="confidencialidade" style="min-height:100px;">${d.confidencialidade||''}</textarea></div>
+      <div class="f"><label>Confidencialidade</label><textarea data-k="confidencialidade" style="min-height:100px;">${esc(d.confidencialidade||'')}</textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
@@ -1654,8 +1680,14 @@ async function saveDiretrizes(){
     const el = container.querySelector(`[data-k="${k}"]`);
     updated[k] = el ? el.value : updated[k];
   });
+  const previousDiretrizes = DB.diretrizes;
   DB.diretrizes = updated;
-  await persist("diretrizes");
+  try{
+    await persist("diretrizes");
+  }catch(_){
+    DB.diretrizes = previousDiretrizes;
+    return;
+  }
   closeForm();
   renderPage();
   showToast("Diretrizes operacionais atualizadas.");
@@ -1697,7 +1729,7 @@ function openPrintView(id){
   const fazendasInfo = fazendaIds.map(fid=>fazenda(fid)).filter(Boolean);
   const locais = [...new Set(fazendasInfo.map(f=>[f.municipio,f.uf].filter(Boolean).join('/')).filter(Boolean))];
   const resp = DB.responsaveis.find(x=>x.id===r.responsavelId);
-  const talhoesInfo = r.talhaoIds.map(tid=>DB.talhoes.find(t=>t.id===tid)).filter(Boolean);
+  const talhoesInfo = (r.talhaoIds||[]).map(tid=>DB.talhoes.find(t=>t.id===tid)).filter(Boolean);
   const totalHa = talhoesInfo.reduce((s,t)=>s+(parseFloat(t.hectares)||0),0);
   const porFazenda = getPorFazendaMap(r);
 
