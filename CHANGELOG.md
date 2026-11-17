@@ -1,5 +1,17 @@
 # Histórico de versões
 
+## v1.6.0 — 2026-11-17
+
+### Incluído
+
+- campo de unidade dos produtos com digitação livre e sugestões;
+- unidades padrão: Kg, g, L, mL, Un e t;
+- reutilização automática das unidades já cadastradas em outros produtos;
+- novas unidades salvas junto ao produto e disponíveis nos cadastros seguintes;
+- cálculo de custo compatível com unidades personalizadas quando a dose usa a mesma unidade;
+- conversões automáticas entre Kg/g, L/mL e t/Kg;
+- rótulo de preço unitário adaptado para qualquer unidade cadastrada.
+
 ## v1.5.1 — 2026-08-23
 
 ### Corrigido
