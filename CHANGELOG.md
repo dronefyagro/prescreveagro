@@ -1,5 +1,14 @@
 # Histórico de versões
 
+## PA1.6.1 — 2026-11-17
+
+### Corrigido
+
+- barra lateral com rolagem vertical própria em notebooks e telas menores;
+- acesso a todas as abas, inclusive itens da área administrativa e botão de saída;
+- navegação horizontal preservada em celulares e tablets;
+- novo padrão de versão Prescreve Agro iniciado em PA1.6.1.
+
 ## v1.6.0 — 2026-11-17
 
 ### Incluído
