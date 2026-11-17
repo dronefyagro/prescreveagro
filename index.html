@@ -5,26 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prescreve Agro</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B2118">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#111111">
+<link rel="icon" type="image/svg+xml" href="brand-symbol.svg">
+<link rel="apple-touch-icon" href="brand-symbol.svg">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Prescreve Agro">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#EFEEE0; --paper-2:#E7E5D5; --ink:#1B2118; --ink-soft:#565A4C;
-  --green:#2E4B32; --green-soft:#3F6544; --amber:#A6672A; --soil:#6B4A2F;
-  --gold:#C99A3E; --rust:#954936; --line:#D7D3BE; --white:#FBFAF4; --herb:#7A6A2E;
+  --paper:#F4F6F5; --paper-2:#E9ECEB; --ink:#111111; --ink-soft:#6B7280;
+  --brand-green:#22C55E; --green:#16A34A; --green-soft:#15803D; --amber:#D97706; --soil:#6B7280;
+  --gold:#22C55E; --rust:#DC2626; --line:#D1D5DB; --white:#FFFFFF; --herb:#4B5563;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
-body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
-.display{font-family:'Fraunces',serif;}
-.mono{font-family:'IBM Plex Mono',monospace;}
+body{background:var(--paper);color:var(--ink);font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased;}
+.display{font-family:'Montserrat',sans-serif;}
+.mono{font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono',monospace;}
 
 .app{display:flex;min-height:100vh;}
 
@@ -32,9 +32,15 @@ body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-s
 .sidebar{
   width:250px;flex-shrink:0;background:var(--ink);color:var(--paper);
   padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;
+  scrollbar-width:thin;scrollbar-color:#4E5745 transparent;
 }
+.sidebar::-webkit-scrollbar{width:8px;}
+.sidebar::-webkit-scrollbar-track{background:transparent;}
+.sidebar::-webkit-scrollbar-thumb{background:#4E5745;border-radius:8px;border:2px solid var(--ink);}
+.sidebar::-webkit-scrollbar-thumb:hover{background:#6A7460;}
 .sidebar .brand{margin-bottom:26px;padding:0 6px;}
-.sidebar .brand .mark{font-family:'Fraunces',serif;font-weight:700;font-size:21px;}
+.sidebar .brand .mark{font-family:'Montserrat',sans-serif;font-weight:700;font-size:21px;}
 .sidebar .brand .tag{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-top:2px;}
 .sidebar .brand .sub{font-size:10.5px;color:#9B9E88;margin-top:6px;line-height:1.4;}
 .navlist{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
@@ -45,20 +51,20 @@ body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-s
 }
 .navitem:hover{background:#242B1D;}
 .navitem.active{background:var(--green);color:#fff;}
-.navitem .cnt{font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#00000030;padding:2px 7px;border-radius:10px;}
+.navitem .cnt{font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono',monospace;font-size:10.5px;background:#00000030;padding:2px 7px;border-radius:10px;}
 .navitem.active .cnt{background:#ffffff30;}
 .navdivider{font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#7A7D68;margin:14px 6px 4px;font-weight:700;}
 .sidebar-foot{margin-top:auto;font-size:10px;color:#7A7D68;line-height:1.6;border-top:1px solid #333a2c;padding-top:12px;}
 
 /* MAIN */
 .main{flex:1;padding:28px 32px 24px;max-width:1180px;display:flex;flex-direction:column;min-height:100vh;}
-.version-footer{margin-top:auto;padding-top:32px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.5px;color:var(--ink-soft);}
+.version-footer{margin-top:auto;padding-top:32px;text-align:center;font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono',monospace;font-size:10px;letter-spacing:.5px;color:var(--ink-soft);}
 .pagehead{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
-.pagehead h1{font-family:'Fraunces',serif;font-weight:600;font-size:26px;margin:0 0 4px;}
+.pagehead h1{font-family:'Montserrat',sans-serif;font-weight:600;font-size:26px;margin:0 0 4px;}
 .pagehead p{font-size:12.5px;color:var(--ink-soft);margin:0;max-width:560px;line-height:1.5;}
 .btn{
   border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;
-  font-family:'IBM Plex Sans',sans-serif;transition:opacity .12s ease;
+  font-family:'Montserrat',sans-serif;transition:opacity .12s ease;
 }
 .btn:hover{opacity:0.88;}
 .btn-primary{background:var(--green);color:#fff;}
@@ -84,7 +90,7 @@ tbody tr:hover{background:#F7F6EC;}
 .badge.Herbicida{background:var(--herb);}
 .rowactions{display:flex;gap:6px;flex-wrap:wrap;}
 .empty{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:13px;}
-.empty b{display:block;font-family:'Fraunces',serif;font-size:17px;color:var(--ink);margin-bottom:4px;font-weight:600;}
+.empty b{display:block;font-family:'Montserrat',sans-serif;font-size:17px;color:var(--ink);margin-bottom:4px;font-weight:600;}
 .subtle{color:var(--ink-soft);font-size:11.5px;}
 .pill{display:inline-block;background:var(--paper-2);border:1px solid var(--line);font-size:11px;padding:2px 8px;border-radius:12px;margin:1px 3px 1px 0;}
 
@@ -99,7 +105,7 @@ tbody tr:hover{background:#F7F6EC;}
   border:1px solid var(--line);
 }
 .modal.wide{max-width:760px;}
-.modal h2{font-family:'Fraunces',serif;font-size:19px;margin:0 0 4px;font-weight:600;}
+.modal h2{font-family:'Montserrat',sans-serif;font-size:19px;margin:0 0 4px;font-weight:600;}
 .modal .msub{font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
 .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .formgrid.one{grid-template-columns:1fr;}
@@ -108,7 +114,7 @@ tbody tr:hover{background:#F7F6EC;}
 .f label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink-soft);font-weight:600;}
 .f input, .f select, .f textarea{
   border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:9px 10px;
-  font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:var(--ink);width:100%;
+  font-family:'Montserrat',sans-serif;font-size:13.5px;color:var(--ink);width:100%;
 }
 .f textarea{resize:vertical;min-height:56px;}
 .f input:focus, .f select:focus, .f textarea:focus{outline:2px solid var(--green-soft);outline-offset:1px;}
@@ -150,7 +156,7 @@ tbody tr:hover{background:#F7F6EC;}
 .loading{padding:60px;text-align:center;color:var(--ink-soft);font-size:13px;}
 
 /* ===== RECEITUÁRIO PRINT DOCUMENT ===== */
-.doc{background:#fff;color:#1B2118;padding:40px;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;}
+.doc{background:#fff;color:#1B2118;padding:40px;border-radius:4px;font-family:'Montserrat',sans-serif;}
 .doc-head{
   display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;margin-bottom:20px;position:relative;
   background-image: radial-gradient(circle, var(--paper) 3px, transparent 3.4px);
@@ -158,26 +164,26 @@ tbody tr:hover{background:#F7F6EC;}
 }
 .doc-head::after{content:"";position:absolute;left:0;right:0;bottom:9px;height:2px;background:var(--gold);}
 .doc-head .brandrow{display:flex;align-items:center;gap:10px;}
-.doc-head .m{font-family:'Fraunces',serif;font-weight:700;font-size:22px;}
+.doc-head .m{font-family:'Montserrat',sans-serif;font-weight:700;font-size:22px;}
 .doc-head .t{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-top:2px;}
-.doc-head .num{font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:right;color:var(--ink-soft);}
-.doc h1{font-family:'Fraunces',serif;font-size:20px;text-align:center;margin:0 0 18px;text-transform:uppercase;letter-spacing:0.5px;}
+.doc-head .num{font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono',monospace;font-size:12px;text-align:right;color:var(--ink-soft);}
+.doc h1{font-family:'Montserrat',sans-serif;font-size:20px;text-align:center;margin:0 0 18px;text-transform:uppercase;letter-spacing:0.5px;}
 .doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 26px;font-size:12.5px;margin-bottom:16px;border:1px solid var(--line);border-radius:8px;padding:14px 16px;}
 .doc-grid .row{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:4px 0;}
 .doc-grid .row b{font-weight:600;}
-.doc-section-title{font-family:'Fraunces',serif;font-weight:600;font-size:14px;margin:18px 0 8px;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:4px;}
+.doc-section-title{font-family:'Montserrat',sans-serif;font-weight:600;font-size:14px;margin:18px 0 8px;color:var(--green);border-bottom:1px solid var(--line);padding-bottom:4px;}
 .doc table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;}
 .doc table th{background:var(--paper-2);text-align:left;padding:7px 9px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;border:1px solid var(--line);}
 .doc table td{padding:7px 9px;border:1px solid var(--line);}
 .doc .obs-block{font-size:12.5px;line-height:1.6;background:var(--paper);border-radius:6px;padding:12px 14px;border:1px solid var(--line);}
 .doc .guide-block{margin-bottom:10px;}
-.doc .guide-block h3{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:12px;margin:0 0 4px;color:var(--ink);}
+.doc .guide-block h3{font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;margin:0 0 4px;color:var(--ink);}
 .doc .guide-block ul{margin:0;padding-left:18px;font-size:12px;line-height:1.6;}
 .doc .guide-block p{margin:0;font-size:12px;line-height:1.6;}
 .doc .conf-block{font-size:10.5px;line-height:1.6;color:var(--ink-soft);margin-top:6px;}
 .doc .conf-block p{margin:0 0 6px;}
 .settings-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:14px;}
-.settings-card h3{font-family:'Fraunces',serif;font-size:15px;margin:0 0 8px;color:var(--green);font-weight:600;}
+.settings-card h3{font-family:'Montserrat',sans-serif;font-size:15px;margin:0 0 8px;color:var(--green);font-weight:600;}
 .settings-card ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink);}
 .settings-card p{margin:0;font-size:13px;line-height:1.7;color:var(--ink);}
 
@@ -187,7 +193,7 @@ tbody tr:hover{background:#F7F6EC;}
   background-image:radial-gradient(circle at 20% 20%, #24301f 0%, var(--ink) 60%);padding:20px;
 }
 .login-card{background:var(--white);border-radius:14px;padding:36px 34px;max-width:380px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.35);}
-.login-card .mark{font-family:'Fraunces',serif;font-weight:700;font-size:26px;color:var(--ink);}
+.login-card .mark{font-family:'Montserrat',sans-serif;font-weight:700;font-size:26px;color:var(--ink);}
 .login-card .tag{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin:2px 0 22px;}
 .login-card .f{margin-bottom:14px;}
 .login-card .btn{width:100%;padding:11px;font-size:13.5px;margin-top:6px;}
@@ -206,7 +212,7 @@ tbody tr:hover{background:#F7F6EC;}
 /* ADMIN DASHBOARD */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
 .stat-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}
-.stat-card .n{font-family:'Fraunces',serif;font-size:28px;font-weight:600;color:var(--green);}
+.stat-card .n{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:600;color:var(--green);}
 .stat-card .l{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-top:2px;}
 .shared-note{font-size:11px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:18px;}
 
@@ -217,7 +223,15 @@ tbody tr:hover{background:#F7F6EC;}
 .doc .foot{margin-top:28px;font-size:9.5px;color:var(--ink-soft);text-align:center;border-top:1px solid var(--line);padding-top:10px;}
 
 .logomark{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logomark img{display:block;width:34px;height:34px;border-radius:9px;}
+.sidebar .logomark img{width:34px;height:34px;}
 .brandrow{display:flex;align-items:center;gap:10px;}
+.brand-name{font-family:'Montserrat',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.8px;line-height:1;}
+.brand-name .agro{color:var(--brand-green);}
+.login-card .brand-name{color:var(--ink);font-size:25px;}
+.sidebar .brand-name{color:#FFFFFF;}
+.brand-slogan{font-size:10px;line-height:1.45;color:var(--ink-soft);margin-top:8px;font-weight:500;}
+.sidebar .brand-slogan{color:#9CA3AF;}
 
 @media print{
   body *{visibility:hidden;}
@@ -230,9 +244,10 @@ tbody tr:hover{background:#F7F6EC;}
 
 @media(max-width:860px){
   .app{flex-direction:column;}
-  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow:auto;padding:14px;}
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:14px;scrollbar-gutter:auto;}
   .sidebar .brand{display:none;}
-  .navlist{flex-direction:row;}
+  .navlist{flex-direction:row;flex-wrap:nowrap;}
+  .navitem{flex:0 0 auto;}
   .navdivider{display:none;}
   .sidebar-foot{display:none;}
   .main{padding:20px;}
@@ -246,16 +261,10 @@ tbody tr:hover{background:#F7F6EC;}
 <div class="login-wrap" id="loginScreen">
   <div class="login-card">
     <div class="brandrow" style="margin-bottom:2px;">
-      <span class="logomark">
-        <svg width="30" height="30" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="34" height="34" rx="9" fill="#2E4B32"/>
-          <path d="M10 24C10 15 15 10 24 10C24 19 19 24 10 24Z" fill="#C99A3E"/>
-          <path d="M10.5 23.5L20 14" stroke="#1B2118" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <div class="mark">Prescreve Agro</div>
+      <span class="logomark"><img src="brand-symbol.svg" alt=""></span>
+      <div class="brand-name">Prescreve<span class="agro">Agro</span></div>
     </div>
-    <div class="tag">Acesso restrito</div>
+    <div class="brand-slogan">Geração e gestão digital de prescrições e documentos técnicos.</div>
     <div class="login-error" id="loginConnWarning" style="display:none;"></div>
     <div class="login-error" id="loginError">Usuário ou senha inválidos.</div>
     <div class="f"><label>Usuário</label><input type="text" id="loginUser" autocomplete="username"></div>
@@ -269,16 +278,10 @@ tbody tr:hover{background:#F7F6EC;}
   <div class="sidebar">
     <div class="brand">
       <div class="brandrow">
-        <span class="logomark">
-          <svg width="26" height="26" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="34" height="34" rx="9" fill="#3F6544"/>
-            <path d="M10 24C10 15 15 10 24 10C24 19 19 24 10 24Z" fill="#C99A3E"/>
-            <path d="M10.5 23.5L20 14" stroke="#1B2118" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </span>
-        <div class="mark">Prescreve Agro</div>
+        <span class="logomark"><img src="brand-symbol.svg" alt=""></span>
+        <div class="brand-name">Prescreve<span class="agro">Agro</span></div>
       </div>
-      <div class="sub" style="margin-top:8px;">Cadastro de clientes, fazendas, talhões, produtos, responsáveis técnicos e receituários agronômicos.</div>
+      <div class="brand-slogan">Geração e gestão digital de prescrições e documentos técnicos.</div>
     </div>
     <div class="navlist" id="navlist"></div>
     <div class="sidebar-foot">
@@ -295,7 +298,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.5.1</footer>
+    <footer class="version-footer">Prescreve Agro · PA1.6.2</footer>
   </div>
 </div>
 
@@ -661,8 +664,8 @@ const FORMS = {
       {k:"principioAtivo",label:"Princípio ativo / cepa",type:"text",span2:true},
       {k:"pragaAlvo",label:"Praga / doença / planta daninha-alvo",type:"textarea",span2:true},
       {k:"dose",label:"Dose recomendada",type:"text"},
-      {k:"unidade",label:"Unidade",type:"selectstatic",options:["Kg","L"],req:true},
-      {k:"precoUnitario",label:"Preço unitário (R$) — valor de 1 Kg ou 1 L",type:"number",step:"0.01",round2:true},
+      {k:"unidade",label:"Unidade",type:"unit",req:true},
+      {k:"precoUnitario",label:"Preço unitário (R$) — valor de 1 unidade informada",type:"number",step:"0.01",round2:true},
     ],
     columns:[
       {h:"Produto",v:r=>esc(r.nome)},
@@ -731,7 +734,7 @@ const pageDescriptions = {
   clientes:"Base de clientes atendidos pela consultoria — pessoa física ou jurídica.",
   fazendas:"Fazendas vinculadas a cada cliente, com localização e responsável técnico designado.",
   talhoes:"Cadastre um talhão individual ou agrupe vários talhões em um único lançamento, informando a área total conjunta.",
-  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. O preço unitário é sempre o valor de 1 Kg ou 1 L do produto.",
+  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. Cadastre a unidade utilizada; novas unidades ficam disponíveis nos próximos produtos.",
   pragasDoencas:"Base editável de pragas e doenças agrícolas, iniciada com os principais problemas fitossanitários da cana-de-açúcar.",
   consultaTecnica:"Consulta de produtos químicos e agentes biológicos para apoio ao manejo integrado de pragas.",
   responsaveis:"Profissionais responsáveis técnicos e seus registros CFTA/CREA.",
@@ -802,8 +805,17 @@ function openForm(moduleKey, id){
       return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
         <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
     }
+    if(f.type==="unit"){
+      const unidades = [...new Set(["Kg","g","L","mL","Un","t", ...DB.produtos.map(p=>String(p.unidade||"").trim()).filter(Boolean)])];
+      const listId = `unit-options-${f.k}`;
+      return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
+        <input type="text" data-k="${f.k}" list="${listId}" value="${esc(val)}" placeholder="Selecione ou digite uma nova unidade" autocomplete="off" ${f.req?'required':''}>
+        <datalist id="${listId}">${unidades.map(o=>`<option value="${esc(o)}"></option>`).join('')}</datalist>
+        <div class="subtle" style="margin-top:5px;">Para adicionar outra unidade, basta digitá-la e salvar o produto.</div>
+      </div>`;
+    }
     if(f.type==="selectstatic"){
-      const opts = f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
+      const opts = f.options.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('');
       return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
         <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
     }
@@ -851,6 +863,7 @@ async function saveRecord(moduleKey){
     } else {
       const el = container.querySelector(`[data-k="${f.k}"]`);
       value = el ? el.value : "";
+      if(f.type==="unit") value = String(value).trim().slice(0,20);
       if(f.type==="number") value = value===""? null : parseFloat(value);
       if(f.round2 && value!==null) value = Math.round(value*100)/100;
     }
@@ -998,7 +1011,7 @@ function renderAdminDashboard(){
       `).join('')}
     </div>
 
-    <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Controle de ART/TRT (limite de ${ART_TRT_LIMITE} receituários por registro)</h2></div>
+    <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:18px;margin:0;">Controle de ART/TRT (limite de ${ART_TRT_LIMITE} receituários por registro)</h2></div>
     ${artTrtRows.length===0 ? `<div class="tablewrap"><div class="empty">Nenhum receituário emitido ainda.</div></div>` : `
       <div class="tablewrap">
         <table>
@@ -1020,7 +1033,7 @@ function renderAdminDashboard(){
       </div>
     `}
 
-    <div class="section-label" style="margin-top:20px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Cadastros gerais</h2></div>
+    <div class="section-label" style="margin-top:20px;"><h2 style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:18px;margin:0;">Cadastros gerais</h2></div>
     <div class="stat-grid">
       ${stats.map(s=>`
         <div class="stat-card" style="cursor:pointer;" onclick="setModule('${s.k}')">
@@ -1030,7 +1043,7 @@ function renderAdminDashboard(){
       `).join('')}
     </div>
 
-    <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0;">Últimos receituários emitidos</h2></div>
+    <div class="section-label" style="margin-top:6px;"><h2 style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:18px;margin:0;">Últimos receituários emitidos</h2></div>
     ${recentes.length===0 ? `<div class="tablewrap"><div class="empty">Nenhum receituário emitido ainda.</div></div>` : `
       <div class="tablewrap">
         <table>
@@ -1418,19 +1431,24 @@ function updateArtTrtStatus(){
 // Sem essa conversão, "500Gr" seria multiplicado como se fosse "500Kg" — erro de 1000x.
 function normalizeUnit(u){
   if(!u) return null;
-  let s = String(u).trim().toLowerCase();
-  if(s==='gr' || s==='gramas') s='g';
-  if(s==='litro' || s==='litros') s='l';
-  if(s==='quilo' || s==='quilos' || s==='kilo') s='kg';
-  if(s==='unid' || s==='unidade' || s==='unidades') s='un';
-  return s;
+  let s = String(u).trim().toLowerCase().replace(/\s+/g,"");
+  s = s.replace(/\/(ha|hectare|hectares)$/,"");
+  const aliases = {
+    gr:"g", grama:"g", gramas:"g",
+    litro:"l", litros:"l", lt:"l",
+    mililitro:"ml", mililitros:"ml", cc:"ml",
+    quilo:"kg", quilos:"kg", kilo:"kg", kilos:"kg",
+    tonelada:"t", toneladas:"t", ton:"t",
+    unid:"un", unidade:"un", unidades:"un"
+  };
+  return aliases[s] || s;
 }
 function parseDoseValue(dose, unidadeProduto){
   if(!dose) return { value:null, confiavel:false };
   const str = String(dose).replace(',', '.').toLowerCase();
-  const m = str.match(/([\d.]+)\s*(kg|gr|g|ml|l|unid|un)?/);
+  const m = str.match(/(\d+(?:\.\d+)?)\s*([a-zà-ÿµ³]+(?:\/(?:ha|hectare|hectares))?)?/i);
   if(!m) return { value:null, confiavel:false };
-  let value = parseFloat(m[1]);
+  const value = parseFloat(m[1]);
   const doseUnit = normalizeUnit(m[2]);
   const baseUnit = normalizeUnit(unidadeProduto);
 
@@ -1443,6 +1461,8 @@ function parseDoseValue(dose, unidadeProduto){
   if(doseUnit==='kg' && baseUnit==='g') return { value: value*1000, confiavel:true };
   if(doseUnit==='ml' && baseUnit==='l') return { value: value/1000, confiavel:true };
   if(doseUnit==='l' && baseUnit==='ml') return { value: value*1000, confiavel:true };
+  if(doseUnit==='kg' && baseUnit==='t') return { value: value/1000, confiavel:true };
+  if(doseUnit==='t' && baseUnit==='kg') return { value: value*1000, confiavel:true };
   // Combinação não reconhecida (ex: unidades incompatíveis) — não converte, sinaliza.
   return { value, confiavel:false };
 }
@@ -1805,13 +1825,7 @@ function openPrintView(id){
     <div id="printArea" class="doc">
       <div class="doc-head">
         <div class="brandrow">
-          <span class="logomark">
-            <svg width="30" height="30" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="34" height="34" rx="9" fill="#2E4B32"/>
-              <path d="M10 24C10 15 15 10 24 10C24 19 19 24 10 24Z" fill="#C99A3E"/>
-              <path d="M10.5 23.5L20 14" stroke="#1B2118" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </span>
+          <span class="logomark"><img src="brand-symbol.svg" alt=""></span>
           <div>
             <div class="m">Prescreve Agro</div>
             <div class="t">Consultoria Dronefy-MAPCANA</div>

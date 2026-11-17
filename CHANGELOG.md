@@ -1,5 +1,38 @@
 # Histórico de versões
 
+## PA1.6.2 — 2026-11-17
+
+### Atualizado
+
+- nova identidade visual Prescreve Agro aplicada ao login, barra lateral e receituário;
+- símbolo vetorial verde e cinza sobre fundo charcoal;
+- paleta oficial com verde #22C55E, charcoal #111111, branco e cinza #6B7280;
+- tipografia principal atualizada para Montserrat;
+- favicon e ícone instalável substituídos pela nova marca;
+- slogan “Geração e gestão digital de prescrições e documentos técnicos.”;
+- cores do tema e do aplicativo instalável atualizadas.
+
+## PA1.6.1 — 2026-11-17
+
+### Corrigido
+
+- barra lateral com rolagem vertical própria em notebooks e telas menores;
+- acesso a todas as abas, inclusive itens da área administrativa e botão de saída;
+- navegação horizontal preservada em celulares e tablets;
+- novo padrão de versão Prescreve Agro iniciado em PA1.6.1.
+
+## v1.6.0 — 2026-11-17
+
+### Incluído
+
+- campo de unidade dos produtos com digitação livre e sugestões;
+- unidades padrão: Kg, g, L, mL, Un e t;
+- reutilização automática das unidades já cadastradas em outros produtos;
+- novas unidades salvas junto ao produto e disponíveis nos cadastros seguintes;
+- cálculo de custo compatível com unidades personalizadas quando a dose usa a mesma unidade;
+- conversões automáticas entre Kg/g, L/mL e t/Kg;
+- rótulo de preço unitário adaptado para qualquer unidade cadastrada.
+
 ## v1.5.1 — 2026-08-23
 
 ### Corrigido
