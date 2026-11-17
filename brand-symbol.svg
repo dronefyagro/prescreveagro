@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Prescreve Agro</title>
+  <desc id="desc">Símbolo da Prescreve Agro: documento verde e marca de confirmação cinza sobre fundo charcoal.</desc>
+  <defs>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2EEA72"/>
+      <stop offset="1" stop-color="#12A94A"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F2F4F7"/>
+      <stop offset="1" stop-color="#9CA3AF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#111111"/>
+  <path d="M72 210h89l94 164-48 70L72 210Z" fill="url(#silver)"/>
+  <path d="M204 76h142l92 92v111h-92l-88 157-78-136 24-42V76Z" fill="url(#green)"/>
+  <path d="M346 76v92h92" fill="none" stroke="#111111" stroke-width="17" stroke-linejoin="round"/>
+  <path d="M346 76l92 92h-92V76Z" fill="#22C55E"/>
+  <path d="M248 154h67M248 205h89M248 256h58" fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>
+  <path d="M187 303l70 121 91-161h90" fill="none" stroke="#111111" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
