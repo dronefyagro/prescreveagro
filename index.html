@@ -32,7 +32,13 @@ body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-s
 .sidebar{
   width:250px;flex-shrink:0;background:var(--ink);color:var(--paper);
   padding:22px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;
+  scrollbar-width:thin;scrollbar-color:#4E5745 transparent;
 }
+.sidebar::-webkit-scrollbar{width:8px;}
+.sidebar::-webkit-scrollbar-track{background:transparent;}
+.sidebar::-webkit-scrollbar-thumb{background:#4E5745;border-radius:8px;border:2px solid var(--ink);}
+.sidebar::-webkit-scrollbar-thumb:hover{background:#6A7460;}
 .sidebar .brand{margin-bottom:26px;padding:0 6px;}
 .sidebar .brand .mark{font-family:'Fraunces',serif;font-weight:700;font-size:21px;}
 .sidebar .brand .tag{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-top:2px;}
@@ -230,9 +236,10 @@ tbody tr:hover{background:#F7F6EC;}
 
 @media(max-width:860px){
   .app{flex-direction:column;}
-  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow:auto;padding:14px;}
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:14px;scrollbar-gutter:auto;}
   .sidebar .brand{display:none;}
-  .navlist{flex-direction:row;}
+  .navlist{flex-direction:row;flex-wrap:nowrap;}
+  .navitem{flex:0 0 auto;}
   .navdivider{display:none;}
   .sidebar-foot{display:none;}
   .main{padding:20px;}
@@ -295,7 +302,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.6.0</footer>
+    <footer class="version-footer">Prescreve Agro · PA1.6.1</footer>
   </div>
 </div>
 
