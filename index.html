@@ -295,7 +295,7 @@ tbody tr:hover{background:#F7F6EC;}
 
   <div class="main">
     <div id="pageContent"><div class="loading">Carregando cadastros…</div></div>
-    <footer class="version-footer">Prescreve Agro · v1.5.1</footer>
+    <footer class="version-footer">Prescreve Agro · v1.6.0</footer>
   </div>
 </div>
 
@@ -661,8 +661,8 @@ const FORMS = {
       {k:"principioAtivo",label:"Princípio ativo / cepa",type:"text",span2:true},
       {k:"pragaAlvo",label:"Praga / doença / planta daninha-alvo",type:"textarea",span2:true},
       {k:"dose",label:"Dose recomendada",type:"text"},
-      {k:"unidade",label:"Unidade",type:"selectstatic",options:["Kg","L"],req:true},
-      {k:"precoUnitario",label:"Preço unitário (R$) — valor de 1 Kg ou 1 L",type:"number",step:"0.01",round2:true},
+      {k:"unidade",label:"Unidade",type:"unit",req:true},
+      {k:"precoUnitario",label:"Preço unitário (R$) — valor de 1 unidade informada",type:"number",step:"0.01",round2:true},
     ],
     columns:[
       {h:"Produto",v:r=>esc(r.nome)},
@@ -731,7 +731,7 @@ const pageDescriptions = {
   clientes:"Base de clientes atendidos pela consultoria — pessoa física ou jurídica.",
   fazendas:"Fazendas vinculadas a cada cliente, com localização e responsável técnico designado.",
   talhoes:"Cadastre um talhão individual ou agrupe vários talhões em um único lançamento, informando a área total conjunta.",
-  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. O preço unitário é sempre o valor de 1 Kg ou 1 L do produto.",
+  produtos:"Produtos biológicos, químicos e orgânicos disponíveis para protocolo. Cadastre a unidade utilizada; novas unidades ficam disponíveis nos próximos produtos.",
   pragasDoencas:"Base editável de pragas e doenças agrícolas, iniciada com os principais problemas fitossanitários da cana-de-açúcar.",
   consultaTecnica:"Consulta de produtos químicos e agentes biológicos para apoio ao manejo integrado de pragas.",
   responsaveis:"Profissionais responsáveis técnicos e seus registros CFTA/CREA.",
@@ -802,8 +802,17 @@ function openForm(moduleKey, id){
       return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
         <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
     }
+    if(f.type==="unit"){
+      const unidades = [...new Set(["Kg","g","L","mL","Un","t", ...DB.produtos.map(p=>String(p.unidade||"").trim()).filter(Boolean)])];
+      const listId = `unit-options-${f.k}`;
+      return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
+        <input type="text" data-k="${f.k}" list="${listId}" value="${esc(val)}" placeholder="Selecione ou digite uma nova unidade" autocomplete="off" ${f.req?'required':''}>
+        <datalist id="${listId}">${unidades.map(o=>`<option value="${esc(o)}"></option>`).join('')}</datalist>
+        <div class="subtle" style="margin-top:5px;">Para adicionar outra unidade, basta digitá-la e salvar o produto.</div>
+      </div>`;
+    }
     if(f.type==="selectstatic"){
-      const opts = f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('');
+      const opts = f.options.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('');
       return `<div class="${spanClass}"><label>${f.label}${f.req?' <span class="req">*</span>':''}</label>
         <select data-k="${f.k}" ${f.req?'required':''}><option value="">Selecione…</option>${opts}</select></div>`;
     }
@@ -851,6 +860,7 @@ async function saveRecord(moduleKey){
     } else {
       const el = container.querySelector(`[data-k="${f.k}"]`);
       value = el ? el.value : "";
+      if(f.type==="unit") value = String(value).trim().slice(0,20);
       if(f.type==="number") value = value===""? null : parseFloat(value);
       if(f.round2 && value!==null) value = Math.round(value*100)/100;
     }
@@ -1418,19 +1428,24 @@ function updateArtTrtStatus(){
 // Sem essa conversão, "500Gr" seria multiplicado como se fosse "500Kg" — erro de 1000x.
 function normalizeUnit(u){
   if(!u) return null;
-  let s = String(u).trim().toLowerCase();
-  if(s==='gr' || s==='gramas') s='g';
-  if(s==='litro' || s==='litros') s='l';
-  if(s==='quilo' || s==='quilos' || s==='kilo') s='kg';
-  if(s==='unid' || s==='unidade' || s==='unidades') s='un';
-  return s;
+  let s = String(u).trim().toLowerCase().replace(/\s+/g,"");
+  s = s.replace(/\/(ha|hectare|hectares)$/,"");
+  const aliases = {
+    gr:"g", grama:"g", gramas:"g",
+    litro:"l", litros:"l", lt:"l",
+    mililitro:"ml", mililitros:"ml", cc:"ml",
+    quilo:"kg", quilos:"kg", kilo:"kg", kilos:"kg",
+    tonelada:"t", toneladas:"t", ton:"t",
+    unid:"un", unidade:"un", unidades:"un"
+  };
+  return aliases[s] || s;
 }
 function parseDoseValue(dose, unidadeProduto){
   if(!dose) return { value:null, confiavel:false };
   const str = String(dose).replace(',', '.').toLowerCase();
-  const m = str.match(/([\d.]+)\s*(kg|gr|g|ml|l|unid|un)?/);
+  const m = str.match(/(\d+(?:\.\d+)?)\s*([a-zà-ÿµ³]+(?:\/(?:ha|hectare|hectares))?)?/i);
   if(!m) return { value:null, confiavel:false };
-  let value = parseFloat(m[1]);
+  const value = parseFloat(m[1]);
   const doseUnit = normalizeUnit(m[2]);
   const baseUnit = normalizeUnit(unidadeProduto);
 
@@ -1443,6 +1458,8 @@ function parseDoseValue(dose, unidadeProduto){
   if(doseUnit==='kg' && baseUnit==='g') return { value: value*1000, confiavel:true };
   if(doseUnit==='ml' && baseUnit==='l') return { value: value/1000, confiavel:true };
   if(doseUnit==='l' && baseUnit==='ml') return { value: value*1000, confiavel:true };
+  if(doseUnit==='kg' && baseUnit==='t') return { value: value/1000, confiavel:true };
+  if(doseUnit==='t' && baseUnit==='kg') return { value: value*1000, confiavel:true };
   // Combinação não reconhecida (ex: unidades incompatíveis) — não converte, sinaliza.
   return { value, confiavel:false };
 }
