@@ -1,5 +1,17 @@
 # Histórico de versões
 
+## PA1.6.2 — 2026-11-17
+
+### Atualizado
+
+- nova identidade visual Prescreve Agro aplicada ao login, barra lateral e receituário;
+- símbolo vetorial verde e cinza sobre fundo charcoal;
+- paleta oficial com verde #22C55E, charcoal #111111, branco e cinza #6B7280;
+- tipografia principal atualizada para Montserrat;
+- favicon e ícone instalável substituídos pela nova marca;
+- slogan “Geração e gestão digital de prescrições e documentos técnicos.”;
+- cores do tema e do aplicativo instalável atualizadas.
+
 ## PA1.6.1 — 2026-11-17
 
 ### Corrigido
